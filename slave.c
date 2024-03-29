@@ -1,4 +1,5 @@
 #include "include/lib.h"
+#include <stdio.h>
 #define MAX_PATH_LENGTH 256
 #define MD5_SUM_LENGTH 33
 #define BUFFER_SIZE 4096
@@ -6,7 +7,6 @@
 
 void calculateMd5(const char *filePath) {
   char md5Command[MAX_PATH_LENGTH + strlen(MD5_COMMAND)];
-  printf("fielpath: %s\n \n", filePath);
   snprintf(md5Command, sizeof(md5Command), "%s%s", MD5_COMMAND, filePath);
 
   FILE *pipe = popen(md5Command, "r");
@@ -21,23 +21,26 @@ void calculateMd5(const char *filePath) {
     exit(EXIT_FAILURE);
   }
 
-  printf("MD5 sum of %s: %s\n", filePath, md5Sum);
   printf("%-34s%-34s%-8d\n", filePath, md5Sum, getpid());
   pclose(pipe);
 }
 
 int main() {
-  printf("Buenas, estoy en slave\n");
-
   ssize_t nbytes;
   char inputBuffer[BUFFER_SIZE];
 
-  while ((nbytes = read(STDIN_FILENO, inputBuffer, sizeof(inputBuffer))) > 0) {
+  if ((nbytes = read(STDIN_FILENO, inputBuffer, sizeof(inputBuffer))) > 0) {
     // Reemplazamos el salto de línea final con un carácter nulo
     if (inputBuffer[nbytes - 1] == '\n') {
       inputBuffer[nbytes - 1] = '\0';
     }
-    calculateMd5(inputBuffer);
+    printf("path recieved in slave: %s\n\n\n", inputBuffer);
+    // Tokenizar la entrada por espacio en blanco
+    char *token = strtok(inputBuffer, " ");
+    while (token != NULL) {
+      calculateMd5(token);
+      token = strtok(NULL, " ");
+    }
   }
 
   return 0;
