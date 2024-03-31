@@ -1,15 +1,17 @@
 #include "include/lib.h"
+#include <stdio.h>
 
-#define FILES_PER_SLAVE 1
+#define MAX_SLAVES 2
+#define BUFFER_SIZE 4096
 #define READ_END 0
 #define WRITE_END 1
 
-void closePipes(int fds[][2], int count) {
-  for (int i = 0; i < count; i++) {
-    close(fds[i][READ_END]);
-    close(fds[i][WRITE_END]);
-  }
-}
+typedef struct {
+  unsigned int delivered_files;
+  unsigned int file_count;
+  unsigned int received_files;
+  int appFds[MAX_SLAVES][2];
+} AppInfo;
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
@@ -18,65 +20,98 @@ int main(int argc, char *argv[]) {
   }
 
   int files = argc - 1;
-  int slaves = (files / FILES_PER_SLAVE) + 1;
 
-  int masterFds[slaves][2];
-  pid_t pids[slaves];
+  AppInfo info = {0, files, 0};
 
-  // Abre el archivo para escribir los resultados MD5
-  int results_fd = open("results.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-  if (results_fd == -1) {
-    perror("open");
-    return EXIT_FAILURE;
-  }
+  for (int i = 0; i < MAX_SLAVES; i++) {
+    int appToSlave[2];
+    int slaveToApp[2];
 
-  // Fork procesos hijos y crea pipes para la comunicación
-  for (int i = 0; i < slaves; i++) {
-    if (pipe(masterFds[i]) == -1) {
+    if (pipe(appToSlave) == -1 || pipe(slaveToApp) == -1) {
       perror("pipe");
-      closePipes(masterFds, i);
       return EXIT_FAILURE;
     }
 
     pid_t pid = fork();
-    if (pid == -1) {
-      perror("fork");
-      closePipes(masterFds, i);
-      return EXIT_FAILURE;
-    } else if (pid == 0) {            // Proceso hijo
-      close(masterFds[i][WRITE_END]); // Cierra el extremo de escritura no
-                                      // utilizado en el hijo
+    if (pid == 0) {
+      close(appToSlave[WRITE_END]);
+      close(slaveToApp[READ_END]);
 
-      // Redirecciona stdin para leer desde el pipe maestro
-      dup2(masterFds[i][READ_END], STDIN_FILENO);
-      close(masterFds[i][READ_END]); // Cierra el extremo de lectura original
+      dup2(appToSlave[READ_END], STDIN_FILENO);
+      close(appToSlave[READ_END]);
 
-      // Ejecuta las tareas del proceso hijo aquí
+      dup2(slaveToApp[WRITE_END], STDOUT_FILENO);
+      close(slaveToApp[WRITE_END]);
+
       execv("./slave", (char *[]){"./slave", NULL});
       perror("execv");
-      exit(EXIT_FAILURE);
+      return EXIT_FAILURE;
+    } else if (pid > 0) {
+      close(appToSlave[READ_END]);
+      close(slaveToApp[WRITE_END]);
+      info.appFds[i][WRITE_END] = appToSlave[WRITE_END];
+      info.appFds[i][READ_END] = slaveToApp[READ_END];
+      write(info.appFds[i][WRITE_END], argv[i + 1], strlen(argv[i + 1]));
+      write(info.appFds[i][WRITE_END], " ", 1);
+      info.delivered_files++;
     } else {
-      pids[i] = pid;
-      close(masterFds[i][READ_END]); // Cierra el extremo de lectura no
-                                     // utilizado en el padre
+      perror("fork");
+      return EXIT_FAILURE;
     }
   }
 
-  // Proceso padre
-  for (int i = 1; i <= files; i++) {
-    int current_slave = (i - 1) / FILES_PER_SLAVE;
-    write(masterFds[current_slave][WRITE_END], argv[i], strlen(argv[i]));
-    write(masterFds[current_slave][WRITE_END], "\n", 1);
-  }
-  closePipes(masterFds, slaves);
+  int current_slave = 0;
+  int file_index = 1;
+  int files_sent = 0;
 
-  // Espera a que todos los procesos hijos terminen
-  for (int i = 0; i < slaves; i++) {
-    waitpid(pids[i], NULL, 0);
+  FILE *outputFile = fopen("md5Result.txt", "a");
+  if (outputFile == NULL) {
+    perror("fopen");
+    return EXIT_FAILURE;
   }
 
-  // Cierra el archivo de resultados
-  close(results_fd);
+  char slave_output[BUFFER_SIZE];
+  while (files_sent < files) {
+    printf("hola\n");
+    if (file_index <= argc - 1) {
+      write(info.appFds[current_slave][WRITE_END], argv[file_index],
+            strlen(argv[file_index]));
+      write(info.appFds[current_slave][WRITE_END], " ", 1);
+      file_index++;
+      files_sent++;
+      info.delivered_files++;
+    }
+
+    fd_set read_fds;
+    FD_ZERO(&read_fds);
+    FD_SET(info.appFds[current_slave][READ_END], &read_fds);
+
+    struct timeval timeout = {0, 0}; // No timeout, block indefinitely
+    int ready_fds = select(info.appFds[current_slave][READ_END] + 1, &read_fds,
+                           NULL, NULL, &timeout);
+    if (ready_fds == -1) {
+      perror("select");
+      break;
+    }
+
+    if (FD_ISSET(info.appFds[current_slave][READ_END], &read_fds)) {
+      ssize_t bytes_read =
+          read(info.appFds[current_slave][READ_END], slave_output, BUFFER_SIZE);
+      printf("slave output: %s", slave_output);
+      if (bytes_read > 0) {
+        fwrite(slave_output, 1, bytes_read, outputFile);
+      }
+    }
+
+    current_slave = (current_slave + 1) % MAX_SLAVES;
+  }
+
+  fclose(outputFile);
+
+  // Print appInfo struct
+  printf("Delivered files: %u\n", info.delivered_files);
+  printf("File count: %u\n", info.file_count);
+  printf("Received files: %u\n", info.received_files);
 
   return EXIT_SUCCESS;
 }
