@@ -19,9 +19,10 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  int files = argc - 1;
-
-  AppInfo info = {0, files, 0};
+  AppInfo info;
+  info.delivered_files = 0;
+  info.file_count = argc - 1;
+  info.received_files = 0;
 
   for (int i = 0; i < MAX_SLAVES; i++) {
     int appToSlave[2];
@@ -38,10 +39,10 @@ int main(int argc, char *argv[]) {
       close(slaveToApp[READ_END]);
 
       dup2(appToSlave[READ_END], STDIN_FILENO);
-      close(appToSlave[READ_END]);
+      // close(appToSlave[READ_END]);
 
       dup2(slaveToApp[WRITE_END], STDOUT_FILENO);
-      close(slaveToApp[WRITE_END]);
+      // close(slaveToApp[WRITE_END]);
 
       execv("./slave", (char *[]){"./slave", NULL});
       perror("execv");
@@ -49,9 +50,12 @@ int main(int argc, char *argv[]) {
     } else if (pid > 0) {
       close(appToSlave[READ_END]);
       close(slaveToApp[WRITE_END]);
+
       info.appFds[i][WRITE_END] = appToSlave[WRITE_END];
       info.appFds[i][READ_END] = slaveToApp[READ_END];
-      write(info.appFds[i][WRITE_END], argv[i + 1], strlen(argv[i + 1]));
+
+      write(info.appFds[i][WRITE_END], argv[info.delivered_files + 1],
+            strlen(argv[info.delivered_files + 1]));
       write(info.appFds[i][WRITE_END], " ", 1);
       info.delivered_files++;
     } else {
@@ -60,50 +64,52 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  int current_slave = 0;
-  int file_index = 1;
-  int files_sent = 0;
-
   FILE *outputFile = fopen("md5Result.txt", "a");
   if (outputFile == NULL) {
     perror("fopen");
     return EXIT_FAILURE;
   }
-
   char slave_output[BUFFER_SIZE];
-  while (files_sent < files) {
-    printf("hola\n");
-    if (file_index <= argc - 1) {
-      write(info.appFds[current_slave][WRITE_END], argv[file_index],
-            strlen(argv[file_index]));
-      write(info.appFds[current_slave][WRITE_END], " ", 1);
-      file_index++;
-      files_sent++;
-      info.delivered_files++;
+  while (info.received_files < info.file_count) {
+    int maxFd = 0;
+    fd_set read_fds = {};
+    // FD_ZERO(&read_fds);
+    // FD_SET(info.appFds[current_slave][READ_END], &read_fds);
+    // FD_ZERO(&read_fds);
+    for (int i = 0; i < MAX_SLAVES; i++) {
+      FD_SET(info.appFds[i][READ_END], &read_fds);
+      if (info.appFds[i][READ_END] > maxFd) {
+        maxFd = info.appFds[i][READ_END];
+      }
     }
 
-    fd_set read_fds;
-    FD_ZERO(&read_fds);
-    FD_SET(info.appFds[current_slave][READ_END], &read_fds);
-
-    struct timeval timeout = {0, 0}; // No timeout, block indefinitely
-    int ready_fds = select(info.appFds[current_slave][READ_END] + 1, &read_fds,
-                           NULL, NULL, &timeout);
-    if (ready_fds == -1) {
+    int selectResult = select(maxFd + 1, &read_fds, NULL, NULL, NULL);
+    if (selectResult == -1) {
       perror("select");
       break;
     }
 
-    if (FD_ISSET(info.appFds[current_slave][READ_END], &read_fds)) {
-      ssize_t bytes_read =
-          read(info.appFds[current_slave][READ_END], slave_output, BUFFER_SIZE);
-      printf("slave output: %s", slave_output);
-      if (bytes_read > 0) {
-        fwrite(slave_output, 1, bytes_read, outputFile);
+    for (int i = 0; info.received_files < info.file_count && i < MAX_SLAVES;
+         i++) {
+      if (FD_ISSET(info.appFds[i][READ_END], &read_fds)) {
+        // printf("Reading from slave %d\n", i);
+        ssize_t bytes_read =
+            read(info.appFds[i][READ_END], slave_output, BUFFER_SIZE);
+        if (bytes_read > 0) {
+          printf("slave_output: %s\n", slave_output);
+          printf("Read %ld bytes\n", bytes_read);
+          fprintf(outputFile, "%s", slave_output);
+          info.received_files++;
+        }
+
+        if (info.delivered_files < info.file_count) {
+          write(info.appFds[i][WRITE_END], argv[info.delivered_files + 1],
+                strlen(argv[info.delivered_files + 1]));
+          write(info.appFds[i][WRITE_END], " ", 1);
+          info.delivered_files++;
+        }
       }
     }
-
-    current_slave = (current_slave + 1) % MAX_SLAVES;
   }
 
   fclose(outputFile);
@@ -112,6 +118,5 @@ int main(int argc, char *argv[]) {
   printf("Delivered files: %u\n", info.delivered_files);
   printf("File count: %u\n", info.file_count);
   printf("Received files: %u\n", info.received_files);
-
   return EXIT_SUCCESS;
 }

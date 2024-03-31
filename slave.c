@@ -31,7 +31,6 @@ void calculateMd5(const char *filePath, int writePipe) {
 int main() {
   ssize_t nbytes;
   char inputBuffer[BUFFER_SIZE];
-  printf("estoy en slave \n");
   // Lee la ruta del archivo del proceso padre a través del STDIN
   if ((nbytes = read(STDIN_FILENO, inputBuffer, sizeof(inputBuffer))) > 0) {
     // Reemplaza el salto de línea final con un carácter nulo
