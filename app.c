@@ -1,5 +1,4 @@
 #include "include/lib.h"
-#include <stdio.h>
 
 #define MAX_SLAVES 2
 #define BUFFER_SIZE 4096
@@ -58,6 +57,12 @@ int main(int argc, char *argv[]) {
             strlen(argv[info.delivered_files + 1]));
       write(info.appFds[i][WRITE_END], " ", 1);
       info.delivered_files++;
+      if (info.delivered_files != info.file_count) {
+        write(info.appFds[i][1], argv[info.delivered_files + 1],
+              strlen(argv[info.delivered_files + 1]));
+        write(info.appFds[i][1], "\n", 1);
+        info.delivered_files++;
+      }
     } else {
       perror("fork");
       return EXIT_FAILURE;
