@@ -9,4 +9,4 @@ slave: slave.c
 	$(CC) $(CFLAGS) -o slave slave.c
 
 clean:
-	rm -f app slave  
+	rm -f app slave md5Result.txt

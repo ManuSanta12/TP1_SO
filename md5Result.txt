@@ -1,4 +1,0 @@
-Text/text3.txt                    ad16825475d275c8ecd03cd3e6c061e7  39789   
-Text/text1.txt                    8e1fbdc26516b9b19e04507270e4275c  39788   
-Text/text2.txt                    523bc6537e637b436d6ec1acd2ffcb1c  39788   
-Text/text4.txt                    c8f6e1fa157b4646cb92c62a09640369  39789   
