@@ -1,128 +1,166 @@
-// This is a personal academic project. Dear PVS-Studio, please check it.
-// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+#include "./include/lib.h"
 
-#include "include/lib.h"
-#include <stdio.h>
+// Function to determine the number of files to be processed
+int amountToProcess(int fileQuantity, int deliveredFiles);
 
-#define MAX_SLAVES 4
-#define BUFFER_SIZE 4096
-#define READ_END 0
-#define WRITE_END 1
-
-typedef struct {
-  unsigned int delivered_files;
-  unsigned int file_count;
-  unsigned int received_files;
-  int appFds[MAX_SLAVES][2];
-} AppInfo;
+// Function to close pipes
+void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
+                int slaveToAppFD[][NUMBER_OF_PIPE_ENDS], int maxSlaves);
 
 int main(int argc, char *argv[]) {
-
-  if (argc < 2) {
-    fprintf(stderr, "Usage: %s <file1> <file2> ... <fileN>\n", argv[0]);
-    return EXIT_FAILURE;
+  // Check if the number of arguments is valid
+  if (argc <= 1) {
+    perror("Invalid arguments quantity");
   }
 
-  AppInfo info;
-  info.delivered_files = 0;
-  info.file_count = argc - 1;
-  info.received_files = 0;
+  // Allocate memory for paths
+  char **paths = calloc(argc - 1, sizeof(char *));
+  if (paths == NULL) {
+    perror("Failed to allocate memory for paths");
+  }
 
-  for (int i = 0; i < MAX_SLAVES && info.delivered_files < info.file_count;
-       i++) {
-    int appToSlave[2];
-    int slaveToApp[2];
+  // Struct to keep track of file delivery information
+  FileDeliveryInfo fileDeliveryInfo;
+  fileDeliveryInfo.deliveredFiles = 0;
+  fileDeliveryInfo.receivedFiles = 0;
 
-    if (pipe(appToSlave) == -1 || pipe(slaveToApp) == -1) {
-      perror("pipe");
-      return EXIT_FAILURE;
+  // Store file paths in an array
+  for (fileDeliveryInfo.fileQuantity = 1; fileDeliveryInfo.fileQuantity <= argc - 1; fileDeliveryInfo.fileQuantity++) {
+    paths[fileDeliveryInfo.fileQuantity - 1] = argv[fileDeliveryInfo.fileQuantity];
+  }
+  fileDeliveryInfo.fileQuantity--;
+
+  // Calculate the maximum number of slaves to be used
+  int maxSlaves = (SLAVES_QTY < ((fileDeliveryInfo.fileQuantity + 1) / 2)) ? SLAVES_QTY : ((fileDeliveryInfo.fileQuantity + 1) / 2);
+
+  // Arrays to hold file descriptors for pipes
+  int appToSlaveFD[maxSlaves][NUMBER_OF_PIPE_ENDS];
+  int slaveToAppFD[maxSlaves][NUMBER_OF_PIPE_ENDS];
+  int pids[maxSlaves];
+
+  // Create pipes for communication between parent process and child processes
+  for (int nSlave = 0; nSlave < maxSlaves; nSlave++) {
+    if (pipe(appToSlaveFD[nSlave]) != 0 || pipe(slaveToAppFD[nSlave]) != 0) {
+      perror("Failed to create pipes");
     }
+    if ((pids[nSlave] = fork()) == 0) {
+      close(appToSlaveFD[nSlave][WRITE]);
+      dup2(appToSlaveFD[nSlave][READ], STDIN_FILENO);
+      close(appToSlaveFD[nSlave][READ]);
 
-    pid_t pid = fork();
-    if (pid == 0) {
-      close(appToSlave[WRITE_END]);
-      close(slaveToApp[READ_END]);
+      close(slaveToAppFD[nSlave][READ]);
+      dup2(slaveToAppFD[nSlave][WRITE], STDOUT_FILENO);
+      close(slaveToAppFD[nSlave][WRITE]);
 
-      dup2(appToSlave[READ_END], STDIN_FILENO);
-      close(appToSlave[READ_END]);
-
-      dup2(slaveToApp[WRITE_END], STDOUT_FILENO);
-      close(slaveToApp[WRITE_END]);
-
+      for (int i = 0; i < nSlave; i++) {
+        close(appToSlaveFD[i][WRITE]);
+        close(slaveToAppFD[i][READ]);
+      }
       execv("slave", (char *[]){"./slave", NULL});
-      perror("execv");
-      return EXIT_FAILURE;
-    } else if (pid > 0) {
-      close(appToSlave[READ_END]);
-      close(slaveToApp[WRITE_END]);
+    }
+    close(slaveToAppFD[nSlave][WRITE]);
+    close(appToSlaveFD[nSlave][READ]);
+  }
 
-      info.appFds[i][WRITE_END] = appToSlave[WRITE_END];
-      info.appFds[i][READ_END] = slaveToApp[READ_END];
+  // Set up file descriptor set for reading
+  fd_set readFDs;
+  int quantity = amountToProcess(fileDeliveryInfo.fileQuantity, fileDeliveryInfo.deliveredFiles);
 
-      if (info.delivered_files != info.file_count) {
-        printf("father path: %s\n", argv[info.delivered_files + 1]);
-        write(info.appFds[i][WRITE_END], argv[info.delivered_files + 1],
-              strlen(argv[info.delivered_files + 1]));
-        write(info.appFds[i][WRITE_END], " ", 1);
-        info.delivered_files++;
+  // Send files to slaves
+  for (int i = 0; i < maxSlaves; i++) {
+    for (int j = 0; j < quantity; j++) {
+      if (write(appToSlaveFD[i][WRITE], paths[fileDeliveryInfo.deliveredFiles], strlen(paths[fileDeliveryInfo.deliveredFiles])) == WRITE_ERROR) {
+        perror("Failed to send paths to slave process");
       }
-    } else {
-      perror("fork");
-      return EXIT_FAILURE;
+
+      if (write(appToSlaveFD[i][WRITE], "\n", 1) == WRITE_ERROR) {
+        perror("Failed to send paths to slave process");
+      }
+      fileDeliveryInfo.deliveredFiles++;
     }
   }
 
-  FILE *outputFile = fopen("md5Result.txt", "a");
-  if (outputFile == NULL) {
+  // Open result file
+  FILE *resultFile = fopen("result.txt", "w");
+  if (resultFile == NULL) {
     perror("fopen");
-    return EXIT_FAILURE;
+    exit(EXIT_FAILURE);
   }
 
-  while (info.received_files < info.file_count) {
-    fd_set read_fds = {};
-    int maxFd = 0;
-    FD_ZERO(&read_fds);
-    for (int j = 0; j < MAX_SLAVES; j++) {
-      FD_SET(info.appFds[j][READ_END], &read_fds);
-      if (info.appFds[j][READ_END] > maxFd) {
-        maxFd = info.appFds[j][READ_END];
-      }
+  // Main loop to process results from slaves
+  while (fileDeliveryInfo.receivedFiles < fileDeliveryInfo.fileQuantity) {
+    int maxFD = 0;
+    FD_ZERO(&readFDs);
+    for (int i = 0; i < maxSlaves; i++) {
+      FD_SET(slaveToAppFD[i][READ], &readFDs);
+      if (slaveToAppFD[i][READ] > maxFD)
+        maxFD = slaveToAppFD[i][READ];
     }
 
-    int selectResult = select(maxFd + 1, &read_fds, NULL, NULL, NULL);
-    if (selectResult == -1) {
-      perror("select");
-      break;
+    if (select(maxFD + 1, &readFDs, NULL, NULL, NULL) == SELECT_ERROR) {
+      perror("Error in select");
     }
 
-    char slave_output[BUFFER_SIZE];
-    for (int i = 0; i < MAX_SLAVES && info.delivered_files < info.file_count;
-         i++) {
-      // printf("[[[]]]\n");
-      if (FD_ISSET(info.appFds[i][READ_END], &read_fds)) {
-        // printf("entre aca\n");
-        ssize_t bytes_read =
-            read(info.appFds[i][READ_END], slave_output, BUFFER_SIZE);
-        if (bytes_read > 0) {
-          slave_output[bytes_read] = '\0';
-          printf("slave_output: %s from slave: %d\n", slave_output, i);
-          fprintf(outputFile, "%s\n", slave_output);
-          info.received_files++;
-          printf("recieved file: %d\n", info.received_files);
-          if (info.delivered_files < info.file_count) {
-            printf("child path: %s from slave: %d\n",
-                   argv[info.delivered_files + 1], i);
-            write(info.appFds[i][WRITE_END], argv[info.delivered_files + 1],
-                  strlen(argv[info.delivered_files + 1]));
-            write(info.appFds[i][WRITE_END], " ", 1);
-            info.delivered_files++;
+    char buffer[SLAVE_BUFFER_SIZE * 2];
+    char md5[SLAVE_BUFFER_SIZE];
+    for (int i = 0; i < maxSlaves; i++) {
+      if (FD_ISSET(slaveToAppFD[i][READ], &readFDs)) {
+        ssize_t readAnswer = read(slaveToAppFD[i][READ], buffer, SLAVE_BUFFER_SIZE - 1);
+        if (readAnswer == -1) {
+          perror("Error while reading slave output.");
+        } else {
+          buffer[readAnswer] = '\0';
+        }
+
+        int md5Index = 0;
+        for (int j = 0; j < readAnswer; j++) {
+          md5[md5Index++] = buffer[j];
+          if (buffer[j] == '\n') {
+            md5[md5Index] = '\0';
+            printf("output: %s", md5);
+            fprintf(resultFile, "%s", md5);
+            fileDeliveryInfo.receivedFiles++;
           }
+        }
+
+        if (fileDeliveryInfo.deliveredFiles < fileDeliveryInfo.fileQuantity) {
+          if (write(appToSlaveFD[i][WRITE], paths[fileDeliveryInfo.deliveredFiles], strlen(paths[fileDeliveryInfo.deliveredFiles])) == WRITE_ERROR) {
+            perror("Failed to send paths to slave process");
+          }
+
+          if (write(appToSlaveFD[i][WRITE], "\n", 1) == WRITE_ERROR) {
+            perror("Failed to send paths to slave process");
+          }
+          fileDeliveryInfo.deliveredFiles++;
         }
       }
     }
   }
 
-  fclose(outputFile);
+  // Close pipes
+  closePipes(appToSlaveFD, slaveToAppFD, maxSlaves);
 
-  return EXIT_SUCCESS;
+  // Free allocated memory
+  free(paths);
+  return 0;
+}
+
+// Function to calculate the number of files to process
+int amountToProcess(int fileQuantity, int deliveredFiles) {
+  if (deliveredFiles > fileQuantity) {
+    perror("Error in processing of files");
+  }
+  if (deliveredFiles + MAX_FILES_SLAVE <= fileQuantity) {
+    return MAX_FILES_SLAVE;
+  }
+  return fileQuantity - deliveredFiles;
+}
+
+// Function to close pipes
+void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
+                int slaveToAppFD[][NUMBER_OF_PIPE_ENDS], int maxSlaves) {
+  for (int i = 0; i < maxSlaves; i++) {
+    close(slaveToAppFD[i][READ]);
+    close(appToSlaveFD[i][WRITE]);
+  }
 }
