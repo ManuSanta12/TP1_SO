@@ -1,5 +1,4 @@
-// This is a personal academic project. Dear PVS-Studio, please check it.
-// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+
 #include "./include/lib.h"
 
 int main(void) {
@@ -20,7 +19,6 @@ int main(void) {
     // Construct the complete MD5 command
     char md5Command[strlen(MD5_COMMAND) + 1 + strlen(filePath) + 1];
     sprintf(md5Command, "%s %s", MD5_COMMAND, filePath);
-
     // Execute MD5 command using popen
     FILE *pipe = popen(md5Command, "r");
     if (pipe == NULL) {

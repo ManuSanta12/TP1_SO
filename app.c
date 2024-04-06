@@ -13,6 +13,10 @@ int main(int argc, char *argv[]) {
   if (argc <= 1) {
     perror("Invalid arguments quantity");
   }
+  int shm_fd = shm_open(SHM_NAME,O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+  ftruncate(shm_fd, BUFFER_SIZE);
+  char* map_result = mmap(0, BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+  sem_t *sem = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
 
   // Struct to keep track of file delivery information
   FileDeliveryInfo fileDeliveryInfo;
@@ -116,9 +120,11 @@ int main(int argc, char *argv[]) {
           md5[md5Index++] = buffer[j];
           if (buffer[j] == '\n') {
             md5[md5Index] = '\0';
+            sem_wait(sem);
             printf("output: %s", md5);
             fprintf(resultFile, "%s", md5);
             fileDeliveryInfo.receivedFiles++;
+            sem_post(sem);
           }
         }
 
@@ -141,7 +147,11 @@ int main(int argc, char *argv[]) {
 
   // Close pipes
   closePipes(appToSlaveFD, slaveToAppFD, maxSlaves);
-
+  munmap(map_result, BUFFER_SIZE);
+  close(shm_fd);
+  shm_unlink(SHM_NAME);
+  sem_close(sem);
+  sem_unlink(SEM_NAME);
   // Free allocated memory
   free(paths);
   return 0;
