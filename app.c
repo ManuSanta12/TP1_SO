@@ -1,4 +1,5 @@
 #include "./include/lib.h"
+#include <stdio.h>
 
 // Function to determine the number of files to be processed
 int amountToProcess(int fileQuantity, int deliveredFiles);
@@ -13,25 +14,19 @@ int main(int argc, char *argv[]) {
     perror("Invalid arguments quantity");
   }
 
-  // Allocate memory for paths
-  char **paths = calloc(argc - 1, sizeof(char *));
-  if (paths == NULL) {
-    perror("Failed to allocate memory for paths");
-  }
-
   // Struct to keep track of file delivery information
   FileDeliveryInfo fileDeliveryInfo;
   fileDeliveryInfo.deliveredFiles = 0;
   fileDeliveryInfo.receivedFiles = 0;
+  fileDeliveryInfo.fileQuantity = 0;
 
-  // Store file paths in an array
-  for (fileDeliveryInfo.fileQuantity = 1; fileDeliveryInfo.fileQuantity <= argc - 1; fileDeliveryInfo.fileQuantity++) {
-    paths[fileDeliveryInfo.fileQuantity - 1] = argv[fileDeliveryInfo.fileQuantity];
-  }
-  fileDeliveryInfo.fileQuantity--;
+  // Allocate memory for paths
+  char **paths = filterFilePaths(argc, argv, &fileDeliveryInfo.fileQuantity);
 
   // Calculate the maximum number of slaves to be used
-  int maxSlaves = (SLAVES_QTY < ((fileDeliveryInfo.fileQuantity + 1) / 2)) ? SLAVES_QTY : ((fileDeliveryInfo.fileQuantity + 1) / 2);
+  int maxSlaves = (SLAVES_QTY < ((fileDeliveryInfo.fileQuantity + 1) / 2))
+                      ? SLAVES_QTY
+                      : ((fileDeliveryInfo.fileQuantity + 1) / 2);
 
   // Arrays to hold file descriptors for pipes
   int appToSlaveFD[maxSlaves][NUMBER_OF_PIPE_ENDS];
@@ -64,12 +59,15 @@ int main(int argc, char *argv[]) {
 
   // Set up file descriptor set for reading
   fd_set readFDs;
-  int quantity = amountToProcess(fileDeliveryInfo.fileQuantity, fileDeliveryInfo.deliveredFiles);
+  int quantity = amountToProcess(fileDeliveryInfo.fileQuantity,
+                                 fileDeliveryInfo.deliveredFiles);
 
   // Send files to slaves
   for (int i = 0; i < maxSlaves; i++) {
     for (int j = 0; j < quantity; j++) {
-      if (write(appToSlaveFD[i][WRITE], paths[fileDeliveryInfo.deliveredFiles], strlen(paths[fileDeliveryInfo.deliveredFiles])) == WRITE_ERROR) {
+      if (write(appToSlaveFD[i][WRITE], paths[fileDeliveryInfo.deliveredFiles],
+                strlen(paths[fileDeliveryInfo.deliveredFiles])) ==
+          WRITE_ERROR) {
         perror("Failed to send paths to slave process");
       }
 
@@ -105,7 +103,8 @@ int main(int argc, char *argv[]) {
     char md5[SLAVE_BUFFER_SIZE];
     for (int i = 0; i < maxSlaves; i++) {
       if (FD_ISSET(slaveToAppFD[i][READ], &readFDs)) {
-        ssize_t readAnswer = read(slaveToAppFD[i][READ], buffer, SLAVE_BUFFER_SIZE - 1);
+        ssize_t readAnswer =
+            read(slaveToAppFD[i][READ], buffer, SLAVE_BUFFER_SIZE - 1);
         if (readAnswer == -1) {
           perror("Error while reading slave output.");
         } else {
@@ -124,7 +123,10 @@ int main(int argc, char *argv[]) {
         }
 
         if (fileDeliveryInfo.deliveredFiles < fileDeliveryInfo.fileQuantity) {
-          if (write(appToSlaveFD[i][WRITE], paths[fileDeliveryInfo.deliveredFiles], strlen(paths[fileDeliveryInfo.deliveredFiles])) == WRITE_ERROR) {
+          if (write(appToSlaveFD[i][WRITE],
+                    paths[fileDeliveryInfo.deliveredFiles],
+                    strlen(paths[fileDeliveryInfo.deliveredFiles])) ==
+              WRITE_ERROR) {
             perror("Failed to send paths to slave process");
           }
 
@@ -163,4 +165,51 @@ void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
     close(slaveToAppFD[i][READ]);
     close(appToSlaveFD[i][WRITE]);
   }
+}
+
+char **filterFilePaths(int argc, char *argv[], int *fileQuantity) {
+  char **validPaths = NULL;
+  int validPathCount = 0;
+
+  // Allocate memory for the array of paths
+  validPaths = (char **)malloc(argc * sizeof(char *));
+  if (validPaths == NULL) {
+    perror("Memory allocation failed");
+    exit(EXIT_FAILURE);
+  }
+
+  // Iterate through the arguments
+  for (int i = 1; i < argc; i++) {
+    struct stat pathStat;
+
+    // Check if the argument is a valid file
+    if (stat(argv[i], &pathStat) == 0 && S_ISREG(pathStat.st_mode)) {
+      // Allocate memory for the path string
+      validPaths[validPathCount] =
+          (char *)malloc(MAX_PATH_LENGTH * sizeof(char));
+      if (validPaths[validPathCount] == NULL) {
+        perror("Memory allocation failed");
+        exit(EXIT_FAILURE);
+      }
+
+      // Copy the path to the array
+      strncpy(validPaths[validPathCount], argv[i], MAX_PATH_LENGTH);
+      validPathCount++;
+    }
+  }
+
+  // Resize the array to fit the valid paths
+  validPaths = (char **)realloc(validPaths, validPathCount * sizeof(char *));
+  if (validPaths == NULL) {
+    perror("Memory reallocation failed");
+    exit(EXIT_FAILURE);
+  }
+
+  // Update the file quantity
+  *fileQuantity = validPathCount;
+
+  // Terminate the array with a NULL pointer
+  validPaths[validPathCount] = NULL;
+
+  return validPaths;
 }
