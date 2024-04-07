@@ -20,9 +20,11 @@
 #define WRITE_ERROR -1
 #define SLAVE_BUFFER_SIZE 256
 #define MAX_PATH_LENGTH 256
+#define BUFFER_SIZE  1024
+
+#define MAX_NAME_SIZE 255
 #define SHM_NAME "/shared_memory"
 #define SEM_NAME "/sempahore"
-#define BUFFER_SIZE  1024
 
 #define READ 0
 #define WRITE 1

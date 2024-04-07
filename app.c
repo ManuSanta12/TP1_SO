@@ -17,13 +17,13 @@ int main(int argc, char *argv[]) {
 
   int shm_fd = shm_open(SHM_NAME,O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
   if(shm_fd==-1){
-    perror("Shared memory error en app");
+    perror("Shared memory error in app process");
     exit(0);
   }
   ftruncate(shm_fd, BUFFER_SIZE);
   char* map_result = mmap(0, BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
   sem_t *sem = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 0);
-  printf("hola nnnn\n");
+  printf("%s",SHM_NAME);
   fflush(stdout); // Vaciar el buffer de salida
   // Struct to keep track of file delivery information
   FileDeliveryInfo fileDeliveryInfo;
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
             md5[md5Index] = '\0';
             //printf("output: %s", md5);
             write(shm_fd, buffer, 50);
-            //fprintf(resultFile, "%s", md5);
+            fprintf(resultFile, "%s", md5);
             fileDeliveryInfo.receivedFiles++;
             sem_post(sem);
           }

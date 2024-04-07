@@ -1,13 +1,16 @@
 #include "./include/lib.h"
 
 int main(int argc, char* argv[]){
-    char * shm_name;
+    char shm_name[MAX_NAME_SIZE];
     sleep(3);
-    read(STDIN_FILENO,shm_name,);
-    printf("%s\n", buf);
-    int shm_fd = shm_open(SHM_NAME, O_RDONLY, S_IRUSR | S_IWUSR);
+    //get semaphore name form stdin, sent by app process
+    int a = read(STDIN_FILENO,shm_name,MAX_NAME_SIZE);
+    shm_name[a] = '\0';
+    printf("bytes: %d read: %s\n", a,shm_name);
+
+    int shm_fd = shm_open(shm_name, O_RDONLY, S_IRUSR | S_IWUSR);
     if (shm_fd == -1){
-        perror("Shared memory error");
+        perror("Shared memory error in view process");
         return EXIT_FAILURE;
     }
     char* buffer = mmap(NULL, BUFFER_SIZE, PROT_READ, MAP_SHARED, shm_fd, 0);
