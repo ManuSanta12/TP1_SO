@@ -129,7 +129,6 @@ int main(int argc, char *argv[]) {
             //puts("la quede aca");
             //printf("output: %s", md5);
             write(shm_fd, buffer, 50);
-            sleep(2);
             //fprintf(resultFile, "%s", md5);
             fileDeliveryInfo.receivedFiles++;
             sem_post(sem);

@@ -1,7 +1,6 @@
 #include "./include/lib.h"
 
 int main(int argc, char* argv[]){
-    //sleep(10);
     int shm_fd = shm_open(SHM_NAME, O_RDONLY, S_IRUSR | S_IWUSR);
     if (shm_fd == -1){
         perror("Shared memory error");
@@ -20,8 +19,6 @@ int main(int argc, char* argv[]){
         char re[100];
         read(shm_fd, re, 50 );
         printf("leyendo: %s\n\n\n",re);    
-        sleep(3);
-        sem_post(sem);
     }
     munmap(buffer, BUFFER_SIZE);
     sem_close(sem);
