@@ -1,6 +1,7 @@
 
 #include "./include/lib.h"
 
+
 int main(void) {
   // Disable STDOUT buffering.
   setvbuf(stdout, NULL, _IONBF, 0);
@@ -34,7 +35,7 @@ int main(void) {
     }
 
     // Print the result in the specified format
-    printf("%d %s %s\n", getpid(), md5Sum, filePath);
+    //printf("%d %s %s\n", getpid(), md5Sum, filePath);
 
     // Close the pipe
     pclose(pipe);

@@ -10,9 +10,11 @@ void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
 
 int main(int argc, char *argv[]) {
   // Check if the number of arguments is valid
+
   if (argc <= 1) {
     perror("Invalid arguments quantity");
   }
+
   int shm_fd = shm_open(SHM_NAME,O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
   if(shm_fd==-1){
     perror("Shared memory error en app");
@@ -21,13 +23,15 @@ int main(int argc, char *argv[]) {
   ftruncate(shm_fd, BUFFER_SIZE);
   char* map_result = mmap(0, BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
   sem_t *sem = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 0);
+  printf("hola nnnn\n");
+  fflush(stdout); // Vaciar el buffer de salida
   // Struct to keep track of file delivery information
   FileDeliveryInfo fileDeliveryInfo;
   fileDeliveryInfo.deliveredFiles = 0;
   fileDeliveryInfo.receivedFiles = 0;
   fileDeliveryInfo.fileQuantity = 0;
   sleep(5);
-  puts("awake");
+  //puts("awake");
 
   // Allocate memory for paths
   char **paths = filterFilePaths(argc, argv, &fileDeliveryInfo.fileQuantity);
@@ -93,7 +97,6 @@ int main(int argc, char *argv[]) {
     perror("fopen");
     exit(EXIT_FAILURE);
   }
-
   // Main loop to process results from slaves
   while (fileDeliveryInfo.receivedFiles < fileDeliveryInfo.fileQuantity) {
     int maxFD = 0;

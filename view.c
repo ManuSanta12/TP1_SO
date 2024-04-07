@@ -1,7 +1,10 @@
 #include "./include/lib.h"
 
 int main(int argc, char* argv[]){
-    sleep(4);
+    char * shm_name;
+    sleep(3);
+    read(STDIN_FILENO,shm_name,);
+    printf("%s\n", buf);
     int shm_fd = shm_open(SHM_NAME, O_RDONLY, S_IRUSR | S_IWUSR);
     if (shm_fd == -1){
         perror("Shared memory error");
