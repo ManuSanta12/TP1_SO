@@ -14,15 +14,21 @@ int main(int argc, char *argv[]) {
     perror("Invalid arguments quantity");
   }
   int shm_fd = shm_open(SHM_NAME,O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+  if(shm_fd==-1){
+    perror("Shared memory error en app");
+    exit(0);
+  }
   ftruncate(shm_fd, BUFFER_SIZE);
   char* map_result = mmap(0, BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-  sem_t *sem = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
-
+  sem_t *sem = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 0);
+  //sleep(10);
   // Struct to keep track of file delivery information
   FileDeliveryInfo fileDeliveryInfo;
   fileDeliveryInfo.deliveredFiles = 0;
   fileDeliveryInfo.receivedFiles = 0;
   fileDeliveryInfo.fileQuantity = 0;
+  sleep(5);
+  puts("awake");
 
   // Allocate memory for paths
   char **paths = filterFilePaths(argc, argv, &fileDeliveryInfo.fileQuantity);
@@ -120,9 +126,11 @@ int main(int argc, char *argv[]) {
           md5[md5Index++] = buffer[j];
           if (buffer[j] == '\n') {
             md5[md5Index] = '\0';
-            sem_wait(sem);
-            printf("output: %s", md5);
-            fprintf(resultFile, "%s", md5);
+            //puts("la quede aca");
+            //printf("output: %s", md5);
+            write(shm_fd, buffer, 50);
+            sleep(2);
+            //fprintf(resultFile, "%s", md5);
             fileDeliveryInfo.receivedFiles++;
             sem_post(sem);
           }
