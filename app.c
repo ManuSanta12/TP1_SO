@@ -21,7 +21,6 @@ int main(int argc, char *argv[]) {
   ftruncate(shm_fd, BUFFER_SIZE);
   char* map_result = mmap(0, BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
   sem_t *sem = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 0);
-  //sleep(10);
   // Struct to keep track of file delivery information
   FileDeliveryInfo fileDeliveryInfo;
   fileDeliveryInfo.deliveredFiles = 0;
@@ -126,7 +125,6 @@ int main(int argc, char *argv[]) {
           md5[md5Index++] = buffer[j];
           if (buffer[j] == '\n') {
             md5[md5Index] = '\0';
-            //puts("la quede aca");
             //printf("output: %s", md5);
             write(shm_fd, buffer, 50);
             //fprintf(resultFile, "%s", md5);

@@ -1,6 +1,7 @@
 #include "./include/lib.h"
 
 int main(int argc, char* argv[]){
+    sleep(4);
     int shm_fd = shm_open(SHM_NAME, O_RDONLY, S_IRUSR | S_IWUSR);
     if (shm_fd == -1){
         perror("Shared memory error");
@@ -12,10 +13,8 @@ int main(int argc, char* argv[]){
         perror("Semaphore error");
         exit(0);
     }
-       // puts("la quede aca en view");
     while(1){
         sem_wait(sem);
-        puts("no espere nada");
         char re[100];
         read(shm_fd, re, 50 );
         printf("leyendo: %s\n\n\n",re);    
