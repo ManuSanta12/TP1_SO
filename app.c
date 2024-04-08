@@ -22,16 +22,16 @@ int main(int argc, char *argv[]) {
   }
   ftruncate(shm_fd, BUFFER_SIZE);
   char* map_result = mmap(0, BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+
   sem_t *sem = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 0);
   printf("%s",SHM_NAME);
   fflush(stdout); // Vaciar el buffer de salida
+
   // Struct to keep track of file delivery information
   FileDeliveryInfo fileDeliveryInfo;
   fileDeliveryInfo.deliveredFiles = 0;
   fileDeliveryInfo.receivedFiles = 0;
   fileDeliveryInfo.fileQuantity = 0;
-  sleep(5);
-  //puts("awake");
 
   // Allocate memory for paths
   char **paths = filterFilePaths(argc, argv, &fileDeliveryInfo.fileQuantity);

@@ -2,7 +2,6 @@
 
 int main(int argc, char* argv[]){
     char shm_name[MAX_NAME_SIZE];
-    sleep(3);
     if(argc == 2){
         strcpy(shm_name, argv[1]);
     } else {
@@ -28,7 +27,6 @@ int main(int argc, char* argv[]){
         sem_wait(sem);
         read(shm_fd, re, READ_BUFFER_SIZE);
         printf("%s\n\n\n",re);    
-
     }
     munmap(buffer, BUFFER_SIZE);
     sem_close(sem);
