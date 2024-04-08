@@ -149,11 +149,15 @@ int main(int argc, char *argv[]) {
 
   // Close pipes
   closePipes(appToSlaveFD, slaveToAppFD, maxSlaves);
+
+  fclose(resultFile);
+
   munmap(map_result, BUFFER_SIZE);
   close(shm_fd);
   shm_unlink(SHM_NAME);
   sem_close(sem);
   sem_unlink(SEM_NAME);
+
   // Free allocated memory
   for (int i = 0; i < fileDeliveryInfo.fileQuantity; i++) {
     free(paths[i]);
