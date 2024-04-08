@@ -155,6 +155,9 @@ int main(int argc, char *argv[]) {
   sem_close(sem);
   sem_unlink(SEM_NAME);
   // Free allocated memory
+  for (int i = 0; i < fileDeliveryInfo.fileQuantity; i++) {
+    free(paths[i]);
+  }
   free(paths);
   return 0;
 }
@@ -180,49 +183,54 @@ void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
 }
 
 char **filterFilePaths(int argc, char *argv[], int *fileQuantity) {
-  char **validPaths = NULL;
-  int validPathCount = 0;
+  const int BLOCK_QTY = 10; // Initial block size and additional blocks to add
 
-  // Allocate initial memory for the array of paths
-  validPaths = (char **)malloc(argc * sizeof(char *));
+  // Check if there are enough arguments
+  if (argc < 2) {
+    perror("No files to process.");
+    exit(EXIT_FAILURE);
+  }
+
+  struct stat pathStat;
+  char **validPaths = malloc(BLOCK_QTY * sizeof(char *));
   if (validPaths == NULL) {
     perror("Memory allocation failed");
     exit(EXIT_FAILURE);
   }
 
+  int validPathCount = 0;
+
   // Iterate through the arguments
   for (int i = 1; i < argc; i++) {
-    struct stat pathStat;
-
-    // Check if the argument is a valid file
+    // Check if the file is a regular file
     if (stat(argv[i], &pathStat) == 0 && S_ISREG(pathStat.st_mode)) {
+      // Perform reallocation if necessary
+      if (validPathCount % BLOCK_QTY == 0) {
+        char **tmp_ptr =
+            realloc(validPaths, (validPathCount + BLOCK_QTY) * sizeof(char *));
+        if (tmp_ptr == NULL) {
+          perror("Memory reallocation failed");
+          exit(EXIT_FAILURE);
+        } else {
+          validPaths = tmp_ptr;
+        }
+      }
+
       // Allocate memory for the path string
-      validPaths[validPathCount] =
-          (char *)malloc(MAX_PATH_LENGTH * sizeof(char));
-      if (validPaths[validPathCount] == NULL) {
+      char *str = malloc(strlen(argv[i]) + 1); // +1 for the null terminator
+      if (str == NULL) {
         perror("Memory allocation failed");
         exit(EXIT_FAILURE);
       }
-
-      // Copy the path to the array
-      strncpy(validPaths[validPathCount], argv[i], MAX_PATH_LENGTH);
-      validPathCount++;
+      validPaths[validPathCount++] = strcpy(str, argv[i]);
+    } else {
+      // Print invalid file paths
+      printf("Invalid file or file type: %s\n", argv[i]);
     }
   }
 
-  // Resize the array to fit the valid paths
-  char **temp = (char **)realloc(validPaths, validPathCount * sizeof(char *));
-  if (temp == NULL) {
-    perror("Memory reallocation failed");
-    exit(EXIT_FAILURE);
-  }
-  validPaths = temp; // Assign the new pointer to validPaths
-
   // Update the file quantity
   *fileQuantity = validPathCount;
-
-  // Terminate the array with a NULL pointer
-  validPaths[validPathCount] = NULL;
 
   return validPaths;
 }

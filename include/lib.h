@@ -2,14 +2,14 @@
 #define LIB_H
 
 #include <fcntl.h>
+#include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <semaphore.h>
-#include <sys/mman.h>
 #include <unistd.h>
 
 #define SLAVES_QTY 4
@@ -22,7 +22,7 @@
 #define MAX_PATH_LENGTH 256
 #define SHM_NAME "shared_memory"
 #define SEM_NAME "/sempahore"
-#define BUFFER_SIZE  1024
+#define BUFFER_SIZE 1024
 
 #define READ 0
 #define WRITE 1

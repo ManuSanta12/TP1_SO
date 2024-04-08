@@ -1,7 +1,7 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "./include/lib.h"
-#define MAX_COMMAND_LENGTH 33
+
 int main(void) {
   // Disable STDOUT buffering.
   setvbuf(stdout, NULL, _IONBF, 0);
@@ -22,7 +22,7 @@ int main(void) {
     sprintf(md5Command, "%s %s", MD5_COMMAND, filePath);
 
     // Verificar que la longitud del comando no exceda un límite seguro
-    if (strlen(md5Command) >= MAX_COMMAND_LENGTH) {
+    if (strlen(md5Command) >= MD5_LENGTH) {
       fprintf(stderr,
               "Error: Longitud del comando MD5 excede el límite permitido\n");
       exit(EXIT_FAILURE);
