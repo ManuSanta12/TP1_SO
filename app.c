@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
           if (buffer[j] == '\n') {
             md5[md5Index] = '\0';
             //printf("output: %s", md5);
-            write(shm_fd, buffer, 50);
+            write(shm_fd, buffer, READ_BUFFER_SIZE);
             fprintf(resultFile, "%s", md5);
             fileDeliveryInfo.receivedFiles++;
             sem_post(sem);
