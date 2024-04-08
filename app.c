@@ -152,6 +152,10 @@ int main(int argc, char *argv[]) {
       }
     }
   }
+  //sending message to end the view process.
+  char end[sizeof(END_MSG)] = END_MSG;
+  sem_post(sem);
+  write(shm_fd, end, sizeof(END_MSG));
 
   // Close pipes
   closePipes(appToSlaveFD, slaveToAppFD, maxSlaves);

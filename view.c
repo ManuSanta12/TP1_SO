@@ -19,11 +19,12 @@ int main(int argc, char* argv[]){
         perror("Semaphore error");
         exit(0);
     }
-    while(1){
+    char re[READ_BUFFER_SIZE];
+    while(strcmp(re, END_MSG)!=0){
         sem_wait(sem);
-        char re[100];
-        read(shm_fd, re, 50 );
-        printf("leyendo: %s\n\n\n",re);    
+        read(shm_fd, re, READ_BUFFER_SIZE);
+        printf("%s\n\n\n",re);    
+
     }
     munmap(buffer, BUFFER_SIZE);
     sem_close(sem);
