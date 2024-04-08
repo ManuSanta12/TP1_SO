@@ -44,7 +44,8 @@ int main(int argc, char *argv[]) {
     if (pipe(appToSlaveFD[nSlave]) != 0 || pipe(slaveToAppFD[nSlave]) != 0) {
       perror("Failed to create pipes");
     }
-    if ((pids[nSlave] = fork()) == 0) {
+    pids[nSlave] = fork();
+    if (pids[nSlave] == 0) {
       close(appToSlaveFD[nSlave][WRITE]);
       dup2(appToSlaveFD[nSlave][READ], STDIN_FILENO);
       close(appToSlaveFD[nSlave][READ]);
@@ -58,9 +59,12 @@ int main(int argc, char *argv[]) {
         close(slaveToAppFD[i][READ]);
       }
       execv("slave", (char *[]){"./slave", NULL});
+    } else if (pids[nSlave] > 0) {
+      close(slaveToAppFD[nSlave][WRITE]);
+      close(appToSlaveFD[nSlave][READ]);
+    } else {
+      perror("Error in fork");
     }
-    close(slaveToAppFD[nSlave][WRITE]);
-    close(appToSlaveFD[nSlave][READ]);
   }
 
   // Set up file descriptor set for reading
