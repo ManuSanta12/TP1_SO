@@ -1,0 +1,175 @@
+execve("./app", ["./app", "app", "app.c", "include", "Makefile", "PVS-Studio.log", "README.md", "report.tasks", "result.txt", "slave", "slave.c", "strace_out", "Text", "view", "view.c"], 0x7ffed3fc8ad0 /* 71 vars */) = 0
+brk(NULL)                               = 0x24f1000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=132467, ...}) = 0
+mmap(NULL, 132467, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7ea013f01000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/librt.so.1", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=14352, ...}) = 0
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7ea013eff000
+mmap(NULL, 16400, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7ea013efa000
+mmap(0x7ea013efb000, 4096, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1000) = 0x7ea013efb000
+mmap(0x7ea013efc000, 4096, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7ea013efc000
+mmap(0x7ea013efd000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7ea013efd000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/libpthread.so.0", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=14288, ...}) = 0
+mmap(NULL, 16400, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7ea013ef5000
+mmap(0x7ea013ef6000, 4096, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1000) = 0x7ea013ef6000
+mmap(0x7ea013ef7000, 4096, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7ea013ef7000
+mmap(0x7ea013ef8000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7ea013ef8000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220^\2\0\0\0\0\0"..., 832) = 832
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+fstat(3, {st_mode=S_IFREG|0755, st_size=1948952, ...}) = 0
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+mmap(NULL, 1973104, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7ea013d13000
+mmap(0x7ea013d37000, 1421312, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x24000) = 0x7ea013d37000
+mmap(0x7ea013e92000, 348160, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x17f000) = 0x7ea013e92000
+mmap(0x7ea013ee7000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1d3000) = 0x7ea013ee7000
+mmap(0x7ea013eed000, 31600, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7ea013eed000
+close(3)                                = 0
+mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7ea013d10000
+arch_prctl(ARCH_SET_FS, 0x7ea013d10740) = 0
+set_tid_address(0x7ea013d10a10)         = 138238
+set_robust_list(0x7ea013d10a20, 24)     = 0
+rseq(0x7ea013d11060, 0x20, 0, 0x53053053) = 0
+mprotect(0x7ea013ee7000, 16384, PROT_READ) = 0
+mprotect(0x7ea013ef8000, 4096, PROT_READ) = 0
+mprotect(0x7ea013efd000, 4096, PROT_READ) = 0
+mprotect(0x7ea013f55000, 8192, PROT_READ) = 0
+prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+munmap(0x7ea013f01000, 132467)          = 0
+openat(AT_FDCWD, "/dev/shm/shared_memory", O_RDWR|O_CREAT|O_NOFOLLOW|O_CLOEXEC, 0600) = 3
+ftruncate(3, 1024)                      = 0
+mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_SHARED, 3, 0) = 0x7ea013f21000
+openat(AT_FDCWD, "/dev/shm/sem.sempahore", O_RDWR|O_NOFOLLOW|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+getrandom("\xa7\x77\x59\x15\xe3\x5d\x17\x19", 8, GRND_NONBLOCK) = 8
+newfstatat(AT_FDCWD, "/dev/shm/sem.VcLVCr", 0x7ffd38e7bca0, AT_SYMLINK_NOFOLLOW) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/dev/shm/sem.VcLVCr", O_RDWR|O_CREAT|O_EXCL|O_NOFOLLOW|O_CLOEXEC, 0600) = 4
+write(4, "\1\0\0\0\0\0\0\0\200\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 32) = 32
+mmap(NULL, 32, PROT_READ|PROT_WRITE, MAP_SHARED, 4, 0) = 0x7ea013f20000
+link("/dev/shm/sem.VcLVCr", "/dev/shm/sem.sempahore") = 0
+fstat(4, {st_mode=S_IFREG|0600, st_size=32, ...}) = 0
+getrandom("\xe8\xf4\x21\x51\xe6\xa7\x64\x5f", 8, GRND_NONBLOCK) = 8
+brk(NULL)                               = 0x24f1000
+brk(0x2512000)                          = 0x2512000
+unlink("/dev/shm/sem.VcLVCr")           = 0
+close(4)                                = 0
+stat("app", {st_mode=S_IFREG|0755, st_size=14800, ...}) = 0
+stat("app.c", {st_mode=S_IFREG|0644, st_size=7193, ...}) = 0
+stat("include", {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+stat("Makefile", {st_mode=S_IFREG|0644, st_size=441, ...}) = 0
+stat("PVS-Studio.log", {st_mode=S_IFREG|0644, st_size=852, ...}) = 0
+stat("README.md", {st_mode=S_IFREG|0644, st_size=34, ...}) = 0
+stat("report.tasks", {st_mode=S_IFREG|0644, st_size=388, ...}) = 0
+stat("result.txt", {st_mode=S_IFREG|0644, st_size=585, ...}) = 0
+stat("slave", {st_mode=S_IFREG|0755, st_size=9112, ...}) = 0
+stat("slave.c", {st_mode=S_IFREG|0644, st_size=1176, ...}) = 0
+stat("strace_out", {st_mode=S_IFREG|0644, st_size=19506, ...}) = 0
+stat("Text", {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+stat("view", {st_mode=S_IFREG|0755, st_size=8336, ...}) = 0
+stat("view.c", {st_mode=S_IFREG|0644, st_size=496, ...}) = 0
+pipe2([4, 5], 0)                        = 0
+pipe2([6, 7], 0)                        = 0
+clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7ea013d10a10) = 138239
+close(7)                                = 0
+close(4)                                = 0
+pipe2([4, 7], 0)                        = 0
+pipe2([8, 9], 0)                        = 0
+clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7ea013d10a10) = 138240
+close(9)                                = 0
+close(4)                                = 0
+pipe2([4, 9], 0)                        = 0
+pipe2([10, 11], 0)                      = 0
+clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7ea013d10a10) = 138241
+close(11)                               = 0
+close(4)                                = 0
+pipe2([4, 11], 0)                       = 0
+pipe2([12, 13], 0)                      = 0
+clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7ea013d10a10) = 138242
+close(13)                               = 0
+close(4)                                = 0
+write(5, "app", 3)                      = 3
+write(5, "\n", 1)                       = 1
+write(5, "app.c", 5)                    = 5
+write(5, "\n", 1)                       = 1
+write(7, "Makefile", 8)                 = 8
+write(7, "\n", 1)                       = 1
+write(7, "PVS-Studio.log", 14)          = 14
+write(7, "\n", 1)                       = 1
+write(9, "README.md", 9)                = 9
+write(9, "\n", 1)                       = 1
+write(9, "report.tasks", 12)            = 12
+write(9, "\n", 1)                       = 1
+write(11, "result.txt", 10)             = 10
+write(11, "\n", 1)                      = 1
+write(11, "slave", 5)                   = 5
+write(11, "\n", 1)                      = 1
+openat(AT_FDCWD, "result.txt", O_WRONLY|O_CREAT|O_TRUNC, 0666) = 4
+pselect6(13, [6 8 10 12], NULL, NULL, NULL, NULL) = 1 (in [10])
+read(10, "138241 0f3acda3991185a634abe1482"..., 255) = 50
+fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0), ...}) = 0
+write(1, "output: 138241 0f3acda3991185a63"..., 58) = 58
+fstat(4, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
+write(9, "slave.c", 7)                  = 7
+write(9, "\n", 1)                       = 1
+pselect6(13, [6 8 10 12], NULL, NULL, NULL, NULL) = 3 (in [6 8 12])
+read(6, "138239 51ec0ac2a766cd5bb42b9f015"..., 255) = 44
+write(1, "output: 138239 51ec0ac2a766cd5bb"..., 52) = 52
+write(5, "strace_out", 10)              = 10
+write(5, "\n", 1)                       = 1
+read(8, "138240 9197effcaf776f633cf4fcc1e"..., 255) = 49
+write(1, "output: 138240 9197effcaf776f633"..., 57) = 57
+write(7, "view", 4)                     = 4
+write(7, "\n", 1)                       = 1
+read(12, "138242 d41d8cd98f00b204e9800998e"..., 255) = 51
+write(1, "output: 138242 d41d8cd98f00b204e"..., 59) = 59
+write(11, "view.c", 6)                  = 6
+write(11, "\n", 1)                      = 1
+pselect6(13, [6 8 10 12], NULL, NULL, NULL, NULL) = 2 (in [8 12])
+read(8, "138240 75259fcce32cd94bb2baab603"..., 255) = 55
+write(1, "output: 138240 75259fcce32cd94bb"..., 63) = 63
+read(12, "138242 91a60113ddc7c572e46ea9ac7"..., 255) = 46
+write(1, "output: 138242 91a60113ddc7c572e"..., 54) = 54
+pselect6(13, [6 8 10 12], NULL, NULL, NULL, NULL) = 1 (in [6])
+read(6, "138239 26e4865f4ecfc182c1600112e"..., 255) = 46
+write(1, "output: 138239 26e4865f4ecfc182c"..., 54) = 54
+pselect6(13, [6 8 10 12], NULL, NULL, NULL, NULL) = 1 (in [10])
+read(10, "138241 4fa9a6dad33825bf8f72448a5"..., 255) = 53
+write(1, "output: 138241 4fa9a6dad33825bf8"..., 61) = 61
+pselect6(13, [6 8 10 12], NULL, NULL, NULL, NULL) = 1 (in [8])
+read(8, "138240 d0201ac8d2e23e084a579349b"..., 255) = 45
+write(1, "output: 138240 d0201ac8d2e23e084"..., 53) = 53
+pselect6(13, [6 8 10 12], NULL, NULL, NULL, NULL) = 2 (in [6 12])
+read(6, "138239 2ccd3b26d6c3a41dc89121c20"..., 255) = 51
+write(1, "output: 138239 2ccd3b26d6c3a41dc"..., 59) = 59
+read(12, "138242 b37b025d03050578dab9a210a"..., 255) = 47
+write(1, "output: 138242 b37b025d03050578d"..., 55) = 55
+pselect6(13, [6 8 10 12], NULL, NULL, NULL, NULL) = 1 (in [10])
+read(10, "138241 65650d91766c815ffa9f5f622"..., 255) = 48
+write(1, "output: 138241 65650d91766c815ff"..., 56) = 56
+close(6)                                = 0
+close(5)                                = 0
+close(8)                                = 0
+close(7)                                = 0
+close(10)                               = 0
+--- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=138239, si_uid=1000, si_status=0, si_utime=0, si_stime=0} ---
+close(9)                                = 0
+--- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=138240, si_uid=1000, si_status=0, si_utime=0, si_stime=0} ---
+close(12)                               = 0
+close(11)                               = 0
+--- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=138241, si_uid=1000, si_status=0, si_utime=0, si_stime=0} ---
+munmap(0x7ea013f21000, 1024)            = 0
+close(3)                                = 0
+unlink("/dev/shm/shared_memory")        = 0
+--- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=138242, si_uid=1000, si_status=0, si_utime=0, si_stime=0} ---
+munmap(0x7ea013f20000, 32)              = 0
+unlink("/dev/shm/sem.sempahore")        = 0
+write(4, "138241 0f3acda3991185a634abe1482"..., 585) = 585
+exit_group(0)                           = ?
++++ exited with 0 +++

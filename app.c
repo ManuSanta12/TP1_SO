@@ -1,5 +1,6 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "./include/lib.h"
-#include <stdio.h>
 
 // Function to determine the number of files to be processed
 int amountToProcess(int fileQuantity, int deliveredFiles);
@@ -13,9 +14,10 @@ int main(int argc, char *argv[]) {
   if (argc <= 1) {
     perror("Invalid arguments quantity");
   }
-  int shm_fd = shm_open(SHM_NAME,O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+  int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
   ftruncate(shm_fd, BUFFER_SIZE);
-  char* map_result = mmap(0, BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+  char *map_result =
+      mmap(0, BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
   sem_t *sem = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
 
   // Struct to keep track of file delivery information
@@ -181,7 +183,7 @@ char **filterFilePaths(int argc, char *argv[], int *fileQuantity) {
   char **validPaths = NULL;
   int validPathCount = 0;
 
-  // Allocate memory for the array of paths
+  // Allocate initial memory for the array of paths
   validPaths = (char **)malloc(argc * sizeof(char *));
   if (validPaths == NULL) {
     perror("Memory allocation failed");
@@ -209,11 +211,12 @@ char **filterFilePaths(int argc, char *argv[], int *fileQuantity) {
   }
 
   // Resize the array to fit the valid paths
-  validPaths = (char **)realloc(validPaths, validPathCount * sizeof(char *));
-  if (validPaths == NULL) {
+  char **temp = (char **)realloc(validPaths, validPathCount * sizeof(char *));
+  if (temp == NULL) {
     perror("Memory reallocation failed");
     exit(EXIT_FAILURE);
   }
+  validPaths = temp; // Assign the new pointer to validPaths
 
   // Update the file quantity
   *fileQuantity = validPathCount;
