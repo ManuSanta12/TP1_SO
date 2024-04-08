@@ -48,16 +48,16 @@ int main(int argc, char *argv[]) {
     if (pids[nSlave] == 0) {
       close(appToSlaveFD[nSlave][WRITE]);
       dup2(appToSlaveFD[nSlave][READ], STDIN_FILENO);
-      close(appToSlaveFD[nSlave][READ]);
+      // close(appToSlaveFD[nSlave][READ]);
 
       close(slaveToAppFD[nSlave][READ]);
       dup2(slaveToAppFD[nSlave][WRITE], STDOUT_FILENO);
-      close(slaveToAppFD[nSlave][WRITE]);
+      // close(slaveToAppFD[nSlave][WRITE]);
 
-      for (int i = 0; i < nSlave; i++) {
-        close(appToSlaveFD[i][WRITE]);
-        close(slaveToAppFD[i][READ]);
-      }
+      // for (int i = 0; i < nSlave; i++) {
+      //   close(appToSlaveFD[i][WRITE]);
+      //   close(slaveToAppFD[i][READ]);
+      // }
       execv("slave", (char *[]){"./slave", NULL});
     } else if (pids[nSlave] > 0) {
       close(slaveToAppFD[nSlave][WRITE]);
