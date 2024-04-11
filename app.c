@@ -10,6 +10,7 @@ int main(int argc, char *argv[]) {
   if (argc <= 1) {
     perror("Invalid arguments quantity");
   }
+
   int shm_fd = shm_open(SHM_NAME,O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
   if(shm_fd==-1){
     perror("Shared memory error in app process");
@@ -30,6 +31,7 @@ int main(int argc, char *argv[]) {
 
   // Allocate memory for paths
   char **paths = filterFilePaths(argc, argv, &fileDeliveryInfo.fileQuantity);
+ 
   // Calculate the maximum number of slaves to be used
   int maxSlaves = (SLAVES_QTY < ((fileDeliveryInfo.fileQuantity + 1) / 2))
                       ? SLAVES_QTY
@@ -40,6 +42,7 @@ int main(int argc, char *argv[]) {
   int appToSlaveFD[maxSlaves][NUMBER_OF_PIPE_ENDS];
   int slaveToAppFD[maxSlaves][NUMBER_OF_PIPE_ENDS];
   int pids[maxSlaves];
+ 
   // Create pipes for communication between parent process and child processes
   for (int nSlave = 0; nSlave < maxSlaves; nSlave++) {
     if (pipe(appToSlaveFD[nSlave]) != 0 || pipe(slaveToAppFD[nSlave]) != 0) {
@@ -49,9 +52,11 @@ int main(int argc, char *argv[]) {
       close(appToSlaveFD[nSlave][WRITE]);
       dup2(appToSlaveFD[nSlave][READ], STDIN_FILENO);
       close(appToSlaveFD[nSlave][READ]);
+
       close(slaveToAppFD[nSlave][READ]);
       dup2(slaveToAppFD[nSlave][WRITE], STDOUT_FILENO);
       close(slaveToAppFD[nSlave][WRITE]);
+
       for (int i = 0; i < nSlave; i++) {
         close(appToSlaveFD[i][WRITE]);
         close(slaveToAppFD[i][READ]);
@@ -61,10 +66,12 @@ int main(int argc, char *argv[]) {
     close(slaveToAppFD[nSlave][WRITE]);
     close(appToSlaveFD[nSlave][READ]);
   }
+
   // Set up file descriptor set for reading
   fd_set readFDs;
   int quantity = amountToProcess(fileDeliveryInfo.fileQuantity,
                                  fileDeliveryInfo.deliveredFiles);
+  
   // Send files to slaves
   for (int i = 0; i < maxSlaves; i++) {
     for (int j = 0; j < quantity; j++) {
@@ -73,18 +80,21 @@ int main(int argc, char *argv[]) {
           WRITE_ERROR) {
         perror("Failed to send paths to slave process");
       }
+
       if (write(appToSlaveFD[i][WRITE], "\n", 1) == WRITE_ERROR) {
         perror("Failed to send paths to slave process");
       }
       fileDeliveryInfo.deliveredFiles++;
     }
   }
+
   // Open result file
   FILE *resultFile = fopen("result.txt", "w");
   if (resultFile == NULL) {
     perror("fopen");
     exit(EXIT_FAILURE);
   }
+
   // Main loop to process results from slaves
   while (fileDeliveryInfo.receivedFiles < fileDeliveryInfo.fileQuantity) {
     int maxFD = 0;
@@ -108,12 +118,12 @@ int main(int argc, char *argv[]) {
         } else {
           buffer[readAnswer] = '\0';
         }
+
         int md5Index = 0;
         for (int j = 0; j < readAnswer; j++) {
           md5[md5Index++] = buffer[j];
           if (buffer[j] == '\n') {
             md5[md5Index] = '\0';
-            //printf("output: %s", md5);
             write(shm_fd, buffer, READ_BUFFER_SIZE);
             fprintf(resultFile, "%s", md5);
             fileDeliveryInfo.receivedFiles++;
@@ -137,16 +147,22 @@ int main(int argc, char *argv[]) {
   }
   //sending message to end the view process.
   char end[sizeof(END_MSG)] = END_MSG;
-  sem_post(sem);
   write(shm_fd, end, sizeof(END_MSG));
+  sem_post(sem);
+
   // Close pipes
   closePipes(appToSlaveFD, slaveToAppFD, maxSlaves);
+  
   munmap(map_result, BUFFER_SIZE);
   close(shm_fd);
   shm_unlink(SHM_NAME);
   sem_close(sem);
+  
   sem_unlink(SEM_NAME);
   // Free allocated memory
+  for (int i = 0; i < fileDeliveryInfo.fileQuantity; i++) {
+    free(paths[i]);
+  }
   free(paths);
   return 0;
 }
