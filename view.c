@@ -5,10 +5,9 @@ int main(int argc, char* argv[]){
     if(argc == 2){
         strcpy(shm_name, argv[1]);
     } else {
-        //get semaphore name form stdin, sent by app process
+        //get shared memory name form stdin, sent by app process
         int a = read(STDIN_FILENO,shm_name,MAX_NAME_SIZE);
         shm_name[a] = '\0';
-        printf("bytes: %d read: %s\n", a,shm_name);
     }
 
     int shm_fd = shm_open(shm_name, O_RDONLY, S_IRUSR | S_IWUSR);

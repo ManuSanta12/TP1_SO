@@ -1,20 +1,15 @@
 #include "./include/lib.h"
 #include <stdio.h>
-
 // Function to determine the number of files to be processed
 int amountToProcess(int fileQuantity, int deliveredFiles);
-
 // Function to close pipes
 void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
                 int slaveToAppFD[][NUMBER_OF_PIPE_ENDS], int maxSlaves);
-
 int main(int argc, char *argv[]) {
   // Check if the number of arguments is valid
-
   if (argc <= 1) {
     perror("Invalid arguments quantity");
   }
-
   int shm_fd = shm_open(SHM_NAME,O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
   if(shm_fd==-1){
     perror("Shared memory error in app process");
@@ -35,17 +30,14 @@ int main(int argc, char *argv[]) {
 
   // Allocate memory for paths
   char **paths = filterFilePaths(argc, argv, &fileDeliveryInfo.fileQuantity);
-
   // Calculate the maximum number of slaves to be used
   int maxSlaves = (SLAVES_QTY < ((fileDeliveryInfo.fileQuantity + 1) / 2))
                       ? SLAVES_QTY
                       : ((fileDeliveryInfo.fileQuantity + 1) / 2);
-
   // Arrays to hold file descriptors for pipes
   int appToSlaveFD[maxSlaves][NUMBER_OF_PIPE_ENDS];
   int slaveToAppFD[maxSlaves][NUMBER_OF_PIPE_ENDS];
   int pids[maxSlaves];
-
   // Create pipes for communication between parent process and child processes
   for (int nSlave = 0; nSlave < maxSlaves; nSlave++) {
     if (pipe(appToSlaveFD[nSlave]) != 0 || pipe(slaveToAppFD[nSlave]) != 0) {
@@ -55,11 +47,9 @@ int main(int argc, char *argv[]) {
       close(appToSlaveFD[nSlave][WRITE]);
       dup2(appToSlaveFD[nSlave][READ], STDIN_FILENO);
       close(appToSlaveFD[nSlave][READ]);
-
       close(slaveToAppFD[nSlave][READ]);
       dup2(slaveToAppFD[nSlave][WRITE], STDOUT_FILENO);
       close(slaveToAppFD[nSlave][WRITE]);
-
       for (int i = 0; i < nSlave; i++) {
         close(appToSlaveFD[i][WRITE]);
         close(slaveToAppFD[i][READ]);
@@ -69,12 +59,10 @@ int main(int argc, char *argv[]) {
     close(slaveToAppFD[nSlave][WRITE]);
     close(appToSlaveFD[nSlave][READ]);
   }
-
   // Set up file descriptor set for reading
   fd_set readFDs;
   int quantity = amountToProcess(fileDeliveryInfo.fileQuantity,
                                  fileDeliveryInfo.deliveredFiles);
-
   // Send files to slaves
   for (int i = 0; i < maxSlaves; i++) {
     for (int j = 0; j < quantity; j++) {
@@ -83,14 +71,12 @@ int main(int argc, char *argv[]) {
           WRITE_ERROR) {
         perror("Failed to send paths to slave process");
       }
-
       if (write(appToSlaveFD[i][WRITE], "\n", 1) == WRITE_ERROR) {
         perror("Failed to send paths to slave process");
       }
       fileDeliveryInfo.deliveredFiles++;
     }
   }
-
   // Open result file
   FILE *resultFile = fopen("result.txt", "w");
   if (resultFile == NULL) {
@@ -106,11 +92,9 @@ int main(int argc, char *argv[]) {
       if (slaveToAppFD[i][READ] > maxFD)
         maxFD = slaveToAppFD[i][READ];
     }
-
     if (select(maxFD + 1, &readFDs, NULL, NULL, NULL) == SELECT_ERROR) {
       perror("Error in select");
     }
-
     char buffer[SLAVE_BUFFER_SIZE * 2];
     char md5[SLAVE_BUFFER_SIZE];
     for (int i = 0; i < maxSlaves; i++) {
@@ -122,7 +106,6 @@ int main(int argc, char *argv[]) {
         } else {
           buffer[readAnswer] = '\0';
         }
-
         int md5Index = 0;
         for (int j = 0; j < readAnswer; j++) {
           md5[md5Index++] = buffer[j];
@@ -135,7 +118,6 @@ int main(int argc, char *argv[]) {
             sem_post(sem);
           }
         }
-
         if (fileDeliveryInfo.deliveredFiles < fileDeliveryInfo.fileQuantity) {
           if (write(appToSlaveFD[i][WRITE],
                     paths[fileDeliveryInfo.deliveredFiles],
@@ -143,7 +125,6 @@ int main(int argc, char *argv[]) {
               WRITE_ERROR) {
             perror("Failed to send paths to slave process");
           }
-
           if (write(appToSlaveFD[i][WRITE], "\n", 1) == WRITE_ERROR) {
             perror("Failed to send paths to slave process");
           }
@@ -156,7 +137,6 @@ int main(int argc, char *argv[]) {
   char end[sizeof(END_MSG)] = END_MSG;
   sem_post(sem);
   write(shm_fd, end, sizeof(END_MSG));
-
   // Close pipes
   closePipes(appToSlaveFD, slaveToAppFD, maxSlaves);
   munmap(map_result, BUFFER_SIZE);
@@ -168,7 +148,6 @@ int main(int argc, char *argv[]) {
   free(paths);
   return 0;
 }
-
 // Function to calculate the number of files to process
 int amountToProcess(int fileQuantity, int deliveredFiles) {
   if (deliveredFiles > fileQuantity) {
@@ -179,7 +158,6 @@ int amountToProcess(int fileQuantity, int deliveredFiles) {
   }
   return fileQuantity - deliveredFiles;
 }
-
 // Function to close pipes
 void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
                 int slaveToAppFD[][NUMBER_OF_PIPE_ENDS], int maxSlaves) {
@@ -188,22 +166,18 @@ void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
     close(appToSlaveFD[i][WRITE]);
   }
 }
-
 char **filterFilePaths(int argc, char *argv[], int *fileQuantity) {
   char **validPaths = NULL;
   int validPathCount = 0;
-
   // Allocate memory for the array of paths
   validPaths = (char **)malloc(argc * sizeof(char *));
   if (validPaths == NULL) {
     perror("Memory allocation failed");
     exit(EXIT_FAILURE);
   }
-
   // Iterate through the arguments
   for (int i = 1; i < argc; i++) {
     struct stat pathStat;
-
     // Check if the argument is a valid file
     if (stat(argv[i], &pathStat) == 0 && S_ISREG(pathStat.st_mode)) {
       // Allocate memory for the path string
@@ -213,25 +187,20 @@ char **filterFilePaths(int argc, char *argv[], int *fileQuantity) {
         perror("Memory allocation failed");
         exit(EXIT_FAILURE);
       }
-
       // Copy the path to the array
       strncpy(validPaths[validPathCount], argv[i], MAX_PATH_LENGTH);
       validPathCount++;
     }
   }
-
   // Resize the array to fit the valid paths
   validPaths = (char **)realloc(validPaths, validPathCount * sizeof(char *));
   if (validPaths == NULL) {
     perror("Memory reallocation failed");
     exit(EXIT_FAILURE);
   }
-
   // Update the file quantity
   *fileQuantity = validPathCount;
-
   // Terminate the array with a NULL pointer
   validPaths[validPathCount] = NULL;
-
   return validPaths;
 }
