@@ -46,27 +46,31 @@ int main(int argc, char *argv[]) {
   int pids[maxSlaves];
  
   // Create pipes for communication between parent process and child processes
-  for (int nSlave = 0; nSlave < maxSlaves; nSlave++) {
+   for (int nSlave = 0; nSlave < maxSlaves; nSlave++) {
     if (pipe(appToSlaveFD[nSlave]) != 0 || pipe(slaveToAppFD[nSlave]) != 0) {
       perror("Failed to create pipes");
     }
-    if ((pids[nSlave] = fork()) == 0) {
+    pids[nSlave] = fork();
+    if (pids[nSlave] == 0) {
       close(appToSlaveFD[nSlave][WRITE]);
       dup2(appToSlaveFD[nSlave][READ], STDIN_FILENO);
-      close(appToSlaveFD[nSlave][READ]);
+      // close(appToSlaveFD[nSlave][READ]);
 
       close(slaveToAppFD[nSlave][READ]);
       dup2(slaveToAppFD[nSlave][WRITE], STDOUT_FILENO);
-      close(slaveToAppFD[nSlave][WRITE]);
+      // close(slaveToAppFD[nSlave][WRITE]);
 
-      for (int i = 0; i < nSlave; i++) {
-        close(appToSlaveFD[i][WRITE]);
-        close(slaveToAppFD[i][READ]);
-      }
+      // for (int i = 0; i < nSlave; i++) {
+      //   close(appToSlaveFD[i][WRITE]);
+      //   close(slaveToAppFD[i][READ]);
+      // }
       execv("slave", (char *[]){"./slave", NULL});
+    } else if (pids[nSlave] > 0) {
+      close(slaveToAppFD[nSlave][WRITE]);
+      close(appToSlaveFD[nSlave][READ]);
+    } else {
+      perror("Error in fork");
     }
-    close(slaveToAppFD[nSlave][WRITE]);
-    close(appToSlaveFD[nSlave][READ]);
   }
 
   // Set up file descriptor set for reading
