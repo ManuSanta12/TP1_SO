@@ -43,7 +43,7 @@ int main(void) {
 
     char md5Sum[MD5_LENGTH + 1];
     // Read MD5 sum from pipe
-    if (fscanf(pipe, "%32s", md5Sum) != 1) {
+    if (fscanf(pipe, "%33s", md5Sum) != 1) {
       fprintf(stderr, "Error reading MD5 sum\n");
       exit(EXIT_FAILURE);
     }

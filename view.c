@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "./include/lib.h"
 
 int main(int argc, char* argv[]){
@@ -21,7 +23,7 @@ int main(int argc, char* argv[]){
         perror("Semaphore error");
         exit(0);
     }
-    char re[READ_BUFFER_SIZE];
+    char re[READ_BUFFER_SIZE]="";
     while(strcmp(re, END_MSG)!=0){
         sem_wait(sem);
         read(shm_fd, re, READ_BUFFER_SIZE);
