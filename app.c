@@ -2,31 +2,28 @@
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "./include/lib.h"
 #include <stdio.h>
-
 // Function to determine the number of files to be processed
 int amountToProcess(int fileQuantity, int deliveredFiles);
-
 // Function to close pipes
 void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
                 int slaveToAppFD[][NUMBER_OF_PIPE_ENDS], int maxSlaves);
-
 int main(int argc, char *argv[]) {
   // Check if the number of arguments is valid
-
   if (argc <= 1) {
     perror("Invalid arguments quantity");
   }
 
-  int shm_fd = shm_open(SHM_NAME,O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-  if(shm_fd==-1){
+  int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+  if (shm_fd == -1) {
     perror("Shared memory error in app process");
     exit(0);
   }
   ftruncate(shm_fd, BUFFER_SIZE);
-  char* map_result = mmap(0, BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+  char *map_result =
+      mmap(0, BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
 
   sem_t *sem = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 0);
-  printf("%s",SHM_NAME);
+  printf("%s", SHM_NAME);
   fflush(stdout); // Vaciar el buffer de salida
 
   // Struct to keep track of file delivery information
@@ -53,23 +50,27 @@ int main(int argc, char *argv[]) {
     if (pipe(appToSlaveFD[nSlave]) != 0 || pipe(slaveToAppFD[nSlave]) != 0) {
       perror("Failed to create pipes");
     }
-    if ((pids[nSlave] = fork()) == 0) {
+    pids[nSlave] = fork();
+    if (pids[nSlave] == 0) {
       close(appToSlaveFD[nSlave][WRITE]);
       dup2(appToSlaveFD[nSlave][READ], STDIN_FILENO);
-      close(appToSlaveFD[nSlave][READ]);
+      // close(appToSlaveFD[nSlave][READ]);
 
       close(slaveToAppFD[nSlave][READ]);
       dup2(slaveToAppFD[nSlave][WRITE], STDOUT_FILENO);
-      close(slaveToAppFD[nSlave][WRITE]);
+      // close(slaveToAppFD[nSlave][WRITE]);
 
-      for (int i = 0; i < nSlave; i++) {
-        close(appToSlaveFD[i][WRITE]);
-        close(slaveToAppFD[i][READ]);
-      }
+      // for (int i = 0; i < nSlave; i++) {
+      //   close(appToSlaveFD[i][WRITE]);
+      //   close(slaveToAppFD[i][READ]);
+      // }
       execv("slave", (char *[]){"./slave", NULL});
+    } else if (pids[nSlave] > 0) {
+      close(slaveToAppFD[nSlave][WRITE]);
+      close(appToSlaveFD[nSlave][READ]);
+    } else {
+      perror("Error in fork");
     }
-    close(slaveToAppFD[nSlave][WRITE]);
-    close(appToSlaveFD[nSlave][READ]);
   }
 
   // Set up file descriptor set for reading
@@ -99,6 +100,7 @@ int main(int argc, char *argv[]) {
     perror("fopen");
     exit(EXIT_FAILURE);
   }
+
   // Main loop to process results from slaves
   while (fileDeliveryInfo.receivedFiles < fileDeliveryInfo.fileQuantity) {
     int maxFD = 0;
@@ -108,11 +110,9 @@ int main(int argc, char *argv[]) {
       if (slaveToAppFD[i][READ] > maxFD)
         maxFD = slaveToAppFD[i][READ];
     }
-
     if (select(maxFD + 1, &readFDs, NULL, NULL, NULL) == SELECT_ERROR) {
       perror("Error in select");
     }
-
     char buffer[SLAVE_BUFFER_SIZE * 2];
     char md5[SLAVE_BUFFER_SIZE];
     for (int i = 0; i < maxSlaves; i++) {
@@ -130,14 +130,12 @@ int main(int argc, char *argv[]) {
           md5[md5Index++] = buffer[j];
           if (buffer[j] == '\n') {
             md5[md5Index] = '\0';
-            //printf("output: %s", md5);
             write(shm_fd, buffer, READ_BUFFER_SIZE);
             fprintf(resultFile, "%s", md5);
             fileDeliveryInfo.receivedFiles++;
             sem_post(sem);
           }
         }
-
         if (fileDeliveryInfo.deliveredFiles < fileDeliveryInfo.fileQuantity) {
           if (write(appToSlaveFD[i][WRITE],
                     paths[fileDeliveryInfo.deliveredFiles],
@@ -145,7 +143,6 @@ int main(int argc, char *argv[]) {
               WRITE_ERROR) {
             perror("Failed to send paths to slave process");
           }
-
           if (write(appToSlaveFD[i][WRITE], "\n", 1) == WRITE_ERROR) {
             perror("Failed to send paths to slave process");
           }
@@ -154,23 +151,27 @@ int main(int argc, char *argv[]) {
       }
     }
   }
-  //sending message to end the view process.
+  // sending message to end the view process.
   char end[sizeof(END_MSG)] = END_MSG;
-  sem_post(sem);
   write(shm_fd, end, sizeof(END_MSG));
+  sem_post(sem);
 
   // Close pipes
   closePipes(appToSlaveFD, slaveToAppFD, maxSlaves);
+
   munmap(map_result, BUFFER_SIZE);
   close(shm_fd);
   shm_unlink(SHM_NAME);
   sem_close(sem);
+
   sem_unlink(SEM_NAME);
   // Free allocated memory
+  for (int i = 0; i < fileDeliveryInfo.fileQuantity; i++) {
+    free(paths[i]);
+  }
   free(paths);
   return 0;
 }
-
 // Function to calculate the number of files to process
 int amountToProcess(int fileQuantity, int deliveredFiles) {
   if (deliveredFiles > fileQuantity) {
@@ -181,7 +182,6 @@ int amountToProcess(int fileQuantity, int deliveredFiles) {
   }
   return fileQuantity - deliveredFiles;
 }
-
 // Function to close pipes
 void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
                 int slaveToAppFD[][NUMBER_OF_PIPE_ENDS], int maxSlaves) {
@@ -192,48 +192,54 @@ void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
 }
 
 char **filterFilePaths(int argc, char *argv[], int *fileQuantity) {
-  char **validPaths = NULL;
-  int validPathCount = 0;
+  const int BLOCK_QTY = 10; // Initial block size and additional blocks to add
 
-  // Allocate memory for the array of paths
-  validPaths = (char **)malloc(argc * sizeof(char *));
+  // Check if there are enough arguments
+  if (argc < 2) {
+    perror("No files to process.");
+    exit(EXIT_FAILURE);
+  }
+
+  struct stat pathStat;
+  char **validPaths = malloc(BLOCK_QTY * sizeof(char *));
   if (validPaths == NULL) {
     perror("Memory allocation failed");
     exit(EXIT_FAILURE);
   }
 
+  int validPathCount = 0;
+
   // Iterate through the arguments
   for (int i = 1; i < argc; i++) {
-    struct stat pathStat;
-
-    // Check if the argument is a valid file
+    // Check if the file is a regular file
     if (stat(argv[i], &pathStat) == 0 && S_ISREG(pathStat.st_mode)) {
+      // Perform reallocation if necessary
+      if (validPathCount % BLOCK_QTY == 0) {
+        char **tmp_ptr =
+            realloc(validPaths, (validPathCount + BLOCK_QTY) * sizeof(char *));
+        if (tmp_ptr == NULL) {
+          perror("Memory reallocation failed");
+          exit(EXIT_FAILURE);
+        } else {
+          validPaths = tmp_ptr;
+        }
+      }
+
       // Allocate memory for the path string
-      validPaths[validPathCount] =
-          (char *)malloc(MAX_PATH_LENGTH * sizeof(char));
-      if (validPaths[validPathCount] == NULL) {
+      char *str = malloc(strlen(argv[i]) + 1); // +1 for the null terminator
+      if (str == NULL) {
         perror("Memory allocation failed");
         exit(EXIT_FAILURE);
       }
-
-      // Copy the path to the array
-      strncpy(validPaths[validPathCount], argv[i], MAX_PATH_LENGTH);
-      validPathCount++;
+      validPaths[validPathCount++] = strcpy(str, argv[i]);
+    } else {
+      // Print invalid file paths
+      // printf("Invalid file or file type: %s\n", argv[i]);
     }
-  }
-
-  // Resize the array to fit the valid paths
-  validPaths = (char **)realloc(validPaths, validPathCount * sizeof(char *));
-  if (validPaths == NULL) {
-    perror("Memory reallocation failed");
-    exit(EXIT_FAILURE);
   }
 
   // Update the file quantity
   *fileQuantity = validPathCount;
-
-  // Terminate the array with a NULL pointer
-  validPaths[validPathCount] = NULL;
 
   return validPaths;
 }
