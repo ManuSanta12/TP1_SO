@@ -233,8 +233,8 @@ char **filterFilePaths(int argc, char *argv[], int *fileQuantity) {
       }
       validPaths[validPathCount++] = strcpy(str, argv[i]);
     } else {
-      // Print invalid file paths
-      // printf("Invalid file or file type: %s\n", argv[i]);
+      perror("Invalid file or file type");
+      exit(EXIT_FAILURE);
     }
   }
 
