@@ -75,11 +75,11 @@ int main(int argc, char *argv[]) {
 
   // Set up file descriptor set for reading
   fd_set readFDs;
-  int quantity = amountToProcess(fileDeliveryInfo.fileQuantity,
-                                 fileDeliveryInfo.deliveredFiles);
 
   // Send files to slaves
   for (int i = 0; i < maxSlaves; i++) {
+  int quantity = amountToProcess(fileDeliveryInfo.fileQuantity,
+                                 fileDeliveryInfo.deliveredFiles);
     for (int j = 0; j < quantity; j++) {
       if (write(appToSlaveFD[i][WRITE], paths[fileDeliveryInfo.deliveredFiles],
                 strlen(paths[fileDeliveryInfo.deliveredFiles])) ==
