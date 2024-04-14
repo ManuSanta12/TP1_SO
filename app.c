@@ -1,14 +1,14 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+//
 #include "./include/lib.h"
 #include <stdio.h>
-// Function to determine the number of files to be processed
+
 int amountToProcess(int fileQuantity, int deliveredFiles);
-// Function to close pipes
 void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
                 int slaveToAppFD[][NUMBER_OF_PIPE_ENDS], int maxSlaves);
+
 int main(int argc, char *argv[]) {
-  // Check if the number of arguments is valid
   if (argc <= 1) {
     perror("Invalid arguments quantity");
   }
@@ -24,28 +24,23 @@ int main(int argc, char *argv[]) {
 
   sem_t *sem = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 0);
   printf("%s", SHM_NAME);
-  fflush(stdout); // Vaciar el buffer de salida
+  fflush(stdout);
 
-  // Struct to keep track of file delivery information
   FileDeliveryInfo fileDeliveryInfo;
   fileDeliveryInfo.deliveredFiles = 0;
   fileDeliveryInfo.receivedFiles = 0;
   fileDeliveryInfo.fileQuantity = 0;
 
-  // Allocate memory for paths
   char **paths = filterFilePaths(argc, argv, &fileDeliveryInfo.fileQuantity);
 
-  // Calculate the maximum number of slaves to be used
   int maxSlaves = (SLAVES_QTY < ((fileDeliveryInfo.fileQuantity + 1) / 2))
                       ? SLAVES_QTY
                       : ((fileDeliveryInfo.fileQuantity + 1) / 2);
 
-  // Arrays to hold file descriptors for pipes
   int appToSlaveFD[maxSlaves][NUMBER_OF_PIPE_ENDS];
   int slaveToAppFD[maxSlaves][NUMBER_OF_PIPE_ENDS];
   int pids[maxSlaves];
 
-  // Create pipes for communication between parent process and child processes
   for (int nSlave = 0; nSlave < maxSlaves; nSlave++) {
     if (pipe(appToSlaveFD[nSlave]) != 0 || pipe(slaveToAppFD[nSlave]) != 0) {
       perror("Failed to create pipes");
@@ -54,16 +49,10 @@ int main(int argc, char *argv[]) {
     if (pids[nSlave] == 0) {
       close(appToSlaveFD[nSlave][WRITE]);
       dup2(appToSlaveFD[nSlave][READ], STDIN_FILENO);
-      // close(appToSlaveFD[nSlave][READ]);
 
       close(slaveToAppFD[nSlave][READ]);
       dup2(slaveToAppFD[nSlave][WRITE], STDOUT_FILENO);
-      // close(slaveToAppFD[nSlave][WRITE]);
 
-      // for (int i = 0; i < nSlave; i++) {
-      //   close(appToSlaveFD[i][WRITE]);
-      //   close(slaveToAppFD[i][READ]);
-      // }
       execv("slave", (char *[]){"./slave", NULL});
     } else if (pids[nSlave] > 0) {
       close(slaveToAppFD[nSlave][WRITE]);
@@ -73,13 +62,11 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  // Set up file descriptor set for reading
   fd_set readFDs;
 
-  // Send files to slaves
   for (int i = 0; i < maxSlaves; i++) {
-  int quantity = amountToProcess(fileDeliveryInfo.fileQuantity,
-                                 fileDeliveryInfo.deliveredFiles);
+    int quantity = amountToProcess(fileDeliveryInfo.fileQuantity,
+                                   fileDeliveryInfo.deliveredFiles);
     for (int j = 0; j < quantity; j++) {
       if (write(appToSlaveFD[i][WRITE], paths[fileDeliveryInfo.deliveredFiles],
                 strlen(paths[fileDeliveryInfo.deliveredFiles])) ==
@@ -94,14 +81,12 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  // Open result file
   FILE *resultFile = fopen("result.txt", "w");
   if (resultFile == NULL) {
     perror("fopen");
     exit(EXIT_FAILURE);
   }
 
-  // Main loop to process results from slaves
   while (fileDeliveryInfo.receivedFiles < fileDeliveryInfo.fileQuantity) {
     int maxFD = 0;
     FD_ZERO(&readFDs);
@@ -113,7 +98,7 @@ int main(int argc, char *argv[]) {
     if (select(maxFD + 1, &readFDs, NULL, NULL, NULL) == SELECT_ERROR) {
       perror("Error in select");
     }
-    char buffer[SLAVE_BUFFER_SIZE * 2];
+    char buffer[SLAVE_BUFFER_SIZE];
     char md5[SLAVE_BUFFER_SIZE];
     for (int i = 0; i < maxSlaves; i++) {
       if (FD_ISSET(slaveToAppFD[i][READ], &readFDs)) {
@@ -130,7 +115,7 @@ int main(int argc, char *argv[]) {
           md5[md5Index++] = buffer[j];
           if (buffer[j] == '\n') {
             md5[md5Index] = '\0';
-            write(shm_fd, buffer, READ_BUFFER_SIZE);
+            write(shm_fd, md5, strlen(md5));
             fprintf(resultFile, "%s", md5);
             fileDeliveryInfo.receivedFiles++;
             sem_post(sem);
@@ -151,12 +136,11 @@ int main(int argc, char *argv[]) {
       }
     }
   }
-  // sending message to end the view process.
+
   char end[sizeof(END_MSG)] = END_MSG;
   write(shm_fd, end, sizeof(END_MSG));
   sem_post(sem);
 
-  // Close pipes
   closePipes(appToSlaveFD, slaveToAppFD, maxSlaves);
 
   munmap(map_result, BUFFER_SIZE);
@@ -165,14 +149,13 @@ int main(int argc, char *argv[]) {
   sem_close(sem);
 
   sem_unlink(SEM_NAME);
-  // Free allocated memory
   for (int i = 0; i < fileDeliveryInfo.fileQuantity; i++) {
     free(paths[i]);
   }
   free(paths);
   return 0;
 }
-// Function to calculate the number of files to process
+
 int amountToProcess(int fileQuantity, int deliveredFiles) {
   if (deliveredFiles > fileQuantity) {
     perror("Error in processing of files");
@@ -182,7 +165,7 @@ int amountToProcess(int fileQuantity, int deliveredFiles) {
   }
   return fileQuantity - deliveredFiles;
 }
-// Function to close pipes
+
 void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
                 int slaveToAppFD[][NUMBER_OF_PIPE_ENDS], int maxSlaves) {
   for (int i = 0; i < maxSlaves; i++) {
@@ -194,9 +177,8 @@ void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
 char **filterFilePaths(int argc, char *argv[], int *fileQuantity) {
   const int BLOCK_QTY = 10; // Initial block size and additional blocks to add
 
-  // Check if there are enough arguments
   if (argc < 2) {
-    perror("No files to process.");
+    fprintf(stderr, "No files to process.\n");
     exit(EXIT_FAILURE);
   }
 
@@ -209,7 +191,6 @@ char **filterFilePaths(int argc, char *argv[], int *fileQuantity) {
 
   int validPathCount = 0;
 
-  // Iterate through the arguments
   for (int i = 1; i < argc; i++) {
     // Check if the file is a regular file
     if (stat(argv[i], &pathStat) == 0 && S_ISREG(pathStat.st_mode)) {
@@ -225,20 +206,17 @@ char **filterFilePaths(int argc, char *argv[], int *fileQuantity) {
         }
       }
 
-      // Allocate memory for the path string
-      char *str = malloc(strlen(argv[i]) + 1); // +1 for the null terminator
+      char *str = malloc(strlen(argv[i]) + 1);
       if (str == NULL) {
         perror("Memory allocation failed");
         exit(EXIT_FAILURE);
       }
       validPaths[validPathCount++] = strcpy(str, argv[i]);
     } else {
-      perror("Invalid file or file type");
-      exit(EXIT_FAILURE);
+      fprintf(stderr, "Invalid file or file type: %s\n", argv[i]);
     }
   }
 
-  // Update the file quantity
   *fileQuantity = validPathCount;
 
   return validPaths;

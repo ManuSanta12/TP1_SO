@@ -6,7 +6,8 @@ int main(int argc, char *argv[]) {
   char shm_name[MAX_NAME_SIZE];
   if (argc == 2) {
     strncpy(shm_name, argv[1], MAX_NAME_SIZE - 1);
-    shm_name[MAX_NAME_SIZE - 1] = '\0';  // Asegurar que el string termina con NULL
+    shm_name[MAX_NAME_SIZE - 1] =
+        '\0'; // Asegurar que el string termina con NULL
   } else {
     // get shared memory name from stdin, sent by app process
     int a = read(STDIN_FILENO, shm_name, MAX_NAME_SIZE - 1);
@@ -14,7 +15,7 @@ int main(int argc, char *argv[]) {
       perror("Error reading from stdin");
       return EXIT_FAILURE;
     }
-    shm_name[a] = '\0';  // Asegurar que el string termina con NULL
+    shm_name[a] = '\0'; // Asegurar que el string termina con NULL
   }
 
   int shm_fd = shm_open(shm_name, O_RDONLY, S_IRUSR | S_IWUSR);
