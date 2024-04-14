@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
           md5[md5Index++] = buffer[j];
           if (buffer[j] == '\n') {
             md5[md5Index] = '\0';
-            write(shm_fd, md5, strlen(md5));
+            write(shm_fd, md5, READ_BUFFER_SIZE);
             fprintf(resultFile, "%s", md5);
             fileDeliveryInfo.receivedFiles++;
             sem_post(sem);
