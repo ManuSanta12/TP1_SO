@@ -2,7 +2,6 @@
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 //
 #include "./include/lib.h"
-#include <stdio.h>
 
 int amountToProcess(int fileQuantity, int deliveredFiles);
 void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],

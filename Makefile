@@ -1,6 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99 -lrt -pthread
-
+CFLAGS = -Wall -Wextra 
 # Define sources and executables
 APP_SRC = app.c
 SLAVE_SRC = slave.c
@@ -29,4 +28,7 @@ $(VIEW): $(VIEW_SRC) $(HEADERS)
 clean:
 	rm -f $(APP) $(SLAVE) $(VIEW) result.txt
 
+clean-pvs:
+	rm -f PVS-Studio.log report.tasks strace_out
+	
 .PHONY: all clean
