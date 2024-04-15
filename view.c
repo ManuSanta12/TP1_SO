@@ -10,12 +10,12 @@ int main(int argc, char *argv[]) {
         '\0'; // Asegurar que el string termina con NULL
   } else {
     // get shared memory name from stdin, sent by app process
-    int a = read(STDIN_FILENO, shm_name, MAX_NAME_SIZE - 1);
-    if (a == -1) {
+    int amountRead = read(STDIN_FILENO, shm_name, MAX_NAME_SIZE - 1);
+    if (amountRead == -1) {
       perror("Error reading from stdin");
       return EXIT_FAILURE;
     }
-    shm_name[a] = '\0'; // Asegurar que el string termina con NULL
+    shm_name[amountRead] = '\0'; // Asegurar que el string termina con NULL
   }
 
   int shm_fd = shm_open(shm_name, O_RDONLY, S_IRUSR | S_IWUSR);
@@ -29,11 +29,11 @@ int main(int argc, char *argv[]) {
     perror("Semaphore error");
     exit(0);
   }
-  char re[READ_BUFFER_SIZE] = "";
-  while (strcmp(re, END_MSG) != 0) {
+  char readFromShm[READ_BUFFER_SIZE] = "";
+  while (strcmp(readFromShm, END_MSG) != 0) {
     sem_wait(sem);
-    read(shm_fd, re, READ_BUFFER_SIZE);
-    printf("%s\n", re);
+    read(shm_fd, readFromShm, READ_BUFFER_SIZE);
+    printf("%s\n", readFromShm);
   }
   munmap(buffer, BUFFER_SIZE);
   sem_close(sem);

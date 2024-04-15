@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra
+CFLAGS = -Wall -Wextra -std=c99 -lrt -pthread
 
 # Define sources and executables
 APP_SRC = app.c
