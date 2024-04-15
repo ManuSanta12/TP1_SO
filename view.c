@@ -30,10 +30,15 @@ int main(int argc, char *argv[]) {
     exit(0);
   }
   char readFromShm[READ_BUFFER_SIZE] = "";
-  while (strcmp(readFromShm, END_MSG) != 0) {
+  char md5_result[BUFFER_SIZE];
+  while (strcmp(md5_result, END_MSG) != 0) {
     sem_wait(sem);
-    read(shm_fd, readFromShm, READ_BUFFER_SIZE);
-    printf("%s\n", readFromShm);
+    int j;
+    for (j = 0; read(shm_fd, readFromShm, 1) > 0 && *readFromShm != '\n'; j++) {
+      md5_result[j] = readFromShm[0];
+    }
+    md5_result[j] = '\0';
+    printf("%s\n", md5_result);
   }
   munmap(buffer, BUFFER_SIZE);
   sem_close(sem);

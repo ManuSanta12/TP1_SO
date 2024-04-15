@@ -1,7 +1,8 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
-//
+
 #include "./include/lib.h"
+#include <stdio.h>
 
 int amountToProcess(int fileQuantity, int deliveredFiles);
 void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
@@ -114,7 +115,7 @@ int main(int argc, char *argv[]) {
           md5[md5Index++] = buffer[j];
           if (buffer[j] == '\n') {
             md5[md5Index] = '\0';
-            write(shm_fd, md5, READ_BUFFER_SIZE);
+            write(shm_fd, md5, strlen(md5));
             fprintf(resultFile, "%s", md5);
             fileDeliveryInfo.receivedFiles++;
             sem_post(sem);
