@@ -7,24 +7,21 @@
 int amountToProcess(int fileQuantity, int deliveredFiles);
 void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
                 int slaveToAppFD[][NUMBER_OF_PIPE_ENDS], int maxSlaves);
+int openShm(char ** map_result);
 
 int main(int argc, char *argv[]) {
   if (argc <= 1) {
     perror("Invalid arguments quantity");
   }
 
-  int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-  if (shm_fd == -1) {
-    perror("Shared memory error in app process");
+  sem_t *sem = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 0);
+  if (sem == SEM_FAILED) {
+    perror("Semaphore create error");
     exit(0);
   }
-  ftruncate(shm_fd, BUFFER_SIZE);
-  char *map_result =
-      mmap(0, BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-
-  sem_t *sem = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 0);
-  printf("%s", SHM_NAME);
-  fflush(stdout);
+  char * map_result;
+  int shm_fd = openShm(&map_result);
+  
 
   FileDeliveryInfo fileDeliveryInfo;
   fileDeliveryInfo.deliveredFiles = 0;
@@ -220,4 +217,19 @@ char **filterFilePaths(int argc, char *argv[], int *fileQuantity) {
   *fileQuantity = validPathCount;
 
   return validPaths;
+}
+
+int openShm(char ** map_result){
+  int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+  if (shm_fd == -1) {
+    perror("Shared memory error in app process");
+    exit(0);
+  }
+  ftruncate(shm_fd, BUFFER_SIZE);
+  *map_result =
+      mmap(0, BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+
+  printf("%s", SHM_NAME);
+  fflush(stdout);
+  return shm_fd;
 }
