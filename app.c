@@ -9,6 +9,8 @@ void closePipes(int appToSlaveFD[][NUMBER_OF_PIPE_ENDS],
                 int slaveToAppFD[][NUMBER_OF_PIPE_ENDS], int maxSlaves);
 int openShm(char ** map_result);
 
+
+
 int main(int argc, char *argv[]) {
   if (argc <= 1) {
     perror("Invalid arguments quantity");
@@ -22,6 +24,8 @@ int main(int argc, char *argv[]) {
   char * map_result;
   int shm_fd = openShm(&map_result);
   
+  
+  mkfifo("/temp_pipename", 0666);
 
   FileDeliveryInfo fileDeliveryInfo;
   fileDeliveryInfo.deliveredFiles = 0;
@@ -49,6 +53,7 @@ int main(int argc, char *argv[]) {
 
       close(slaveToAppFD[nSlave][READ]);
       dup2(slaveToAppFD[nSlave][WRITE], STDOUT_FILENO);
+
 
       execv("slave", (char *[]){"./slave", NULL});
     } else if (pids[nSlave] > 0) {

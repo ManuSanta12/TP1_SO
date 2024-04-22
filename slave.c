@@ -10,6 +10,9 @@ int main(void) {
   size_t lineCapacity = 0;
   ssize_t bytesRead;
 
+  int fifo_fd = open("/temp_pipename", O_WRONLY);
+
+
   // Read file paths from stdin until EOF
   while ((bytesRead = getline(&filePath, &lineCapacity, stdin)) > 0) {
     if (filePath[bytesRead - 1] == '\n') {
@@ -44,7 +47,7 @@ int main(void) {
     }
 
     printf("%d %s %s\n", getpid(), md5Sum, filePath);
-
+    dprintf(fifo_fd, "%d %s %s\n", getpid(), md5Sum, filePath);
     pclose(pipe);
   }
 
